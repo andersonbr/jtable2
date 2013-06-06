@@ -1,0 +1,133 @@
+@CHARSET "UTF-8";
+.jtable2 {
+	border: 1px solid #c0c0c0;
+	font-family: tahoma;
+	font-size: 12px;
+}
+
+
+/**
+  * filters
+  */
+.jtable2 .filterArea {
+	background-color: #e0e0e0;
+	border-bottom: 1px solid #d0d0d0;
+	padding: 5px;
+	min-height: 27px;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	display: none;
+}
+.jtable2 .filterArea .filters {
+}
+.jtable2 .filterArea .filtersAdd {
+	width: 80px;
+	height: 15px;
+	background-color: #f0f0f0;
+	border: 1px solid #d0d0d0;
+	padding: 5px;
+	cursor: pointer;
+	position: absolute;
+	right: 102px;
+	top: 5px;
+	text-align: center;
+}
+.jtable2 .filterArea .filtersSearch {
+	width: 80px;
+	height: 15px;
+	background-color: #f0f0f0;
+	border: 1px solid #d0d0d0;
+	padding: 5px;
+	cursor: pointer;
+	position: absolute;
+	right: 5px;
+	top: 5px;
+	text-align: center;
+}
+
+
+/**
+  * result
+  */
+.jtable2 .resultArea {
+	padding: 0px;
+	min-height: 27px;
+    -webkit-font-smoothing: antialiased;
+    -moz-font-smoothing: antialiased;
+    -ms-font-smoothing: antialiased;
+    -o-font-smoothing: antialiased;
+    -webkit-transition: height 400ms ease-in;
+    -webkit-transition-delay: 0ms;
+    -moz-transition: height 400ms ease-in 0ms;
+    -o-transition: height 400ms ease-in 0ms;
+    transition: height 400ms ease-in 0ms;
+	height: 0px;
+	overflow: hidden;
+}
+.jtable2 .resultArea table {
+	width: 100%;
+	padding: 0px;
+	margin: 0px;
+	border: 0px;
+	border-spacing: 0px;
+}
+.jtable2 .resultArea table thead th {
+	background-color: #f0f0f0;
+	padding: 5px;
+	height: 27px;
+	cursor: pointer;
+}
+.jtable2 .resultArea table thead th.selected {
+	background-color: #e5e5e5;
+	padding: 5px;
+	height: 27px;
+	cursor: pointer;
+}
+.jtable2 .resultArea table tbody tr.odd {
+	background-color: #fff;
+}
+.jtable2 .resultArea table tbody tr.even {
+	background-color: #f8f8f8;
+}
+.jtable2 .resultArea table tbody td {
+	padding: 5px;
+}
+
+/**
+  * paginating
+  */
+.jtable2 .paginatingArea {
+	background-color: #e0e0e0;
+	border-top: 1px solid #d0d0d0;
+	padding: 5px;
+	height: 27px;
+	display: none;
+}
+
+
+/**
+  * all
+  */
+.jtable2,
+.jtable2 .filterArea,
+.jtable2 .resultArea,
+.jtable2 .paginatingArea {
+	position: relative;
+}
+.jtable2 {
+	min-width: 500px;
+}
+
+.jtable2 .filterArea .textfilter {
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	border: 1px solid #c0c0c0;
+	height: 20px;
+	margin: 3px;
+	width: 245px;
+}

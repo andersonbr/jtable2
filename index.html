@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<meta charset="utf-8">
+	<meta http-equiv="cache-control" content="no-cache">
+	<link rel="stylesheet" media="all" href="css/jtable2.css">
+	<link rel="stylesheet" media="all" href="css/ui-lightness/jquery-ui-1.10.3.custom.min.css">
+	<script src="js/jquery-1.10.1.min.js"></script>
+	<script src="js/jquery-ui-1.10.3.custom.min.js"></script>
+	<script src="js/jquery-ui-timepicker-addon.js"></script>
+	<script src="js/jtable2.js"></script>
+	<script>
+		$(window).ready(function(){
+			$("#tabela").jTable2({
+				debug: true,
+				filtering: true,
+				lang: "pt",
+				url: "jtable.json",
+				requestMethod: "GET",
+				rootNode: "list",
+				fields: [
+					{title: "ID", field: "id", style: { "text-align": "center" }},
+					{title: "Usuário", field: "user", style: { "text-align": "center" }},
+					{title: "Nome", field: "name", style: { "text-align": "center" }},
+					{title: "Data", field: "date", style: { "text-align": "center" }, type: "date", converter: function(v) {
+						return new Date(v)
+					}}
+				]
+			});
+			//$("#tabela").load();
+		});
+	</script>
+	<style>
+		body {
+			margin: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div id="tabela"></div>
+</body>
+</html>
