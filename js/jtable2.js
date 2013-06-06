@@ -170,7 +170,7 @@
 
 			$(instance.element).find(".paginatingArea").fadeIn('fast');
 		} else {
-			this.log("fatal: root node not found ("+this.settings.rootNode+")")
+			this.log("fatal: root node not found ("+this.settings.rootNode+")");
 		}
 	};
 
@@ -203,13 +203,13 @@
 			"en": "Interval",
 			"pt": "Intervalo"
 		}
-	}
+	};
 	jTable2.getMessage = function(key, lang) {
 		var l = (typeof lang != "undefined" && lang != null) ? lang : ((navigator.language) ? navigator.language : navigator.userLanguage);
 		l = l.split("-")[0];
 		var msg = typeof jTable2.messages[key][lang] != "undefined" ? jTable2.messages[key][l] : jTable2.messages[key]["en"];
 		return msg;
-	}
+	};
 
 	/**
 	 * get instance by element
