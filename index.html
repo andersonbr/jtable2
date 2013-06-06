@@ -10,25 +10,53 @@
 	<script src="js/jquery-ui-1.10.3.custom.min.js"></script>
 	<script src="js/jquery-ui-timepicker-addon.js"></script>
 	<script src="js/jtable2.js"></script>
+	<script src="js/moment.min.js"></script>
 	<script>
 		$(window).ready(function(){
 			$("#tabela").jTable2({
-				debug: true,
+				title: "Lista de infrações",
 				filtering: true,
+				url: "/TalaoEletronicoServer/ait/listarTabela/",
 				lang: "pt",
-				url: "jtable.json",
-				requestMethod: "GET",
-				rootNode: "list",
-				fields: [
-					{title: "ID", field: "id", style: { "text-align": "center" }},
-					{title: "Usuário", field: "user", style: { "text-align": "center" }},
-					{title: "Nome", field: "name", style: { "text-align": "center" }},
-					{title: "Data", field: "date", style: { "text-align": "center" }, type: "date", converter: function(v) {
-						return new Date(v)
-					}}
-				]
+				fields: {
+					"ait":   {
+						title: "AIT",
+						style: { "text-align": "center", "width": "100px" }
+					},
+					"veiculo.placaCodigo": {
+						title: "Placa",
+						style: { "text-align": "center", "width": "100px"  },
+						maxLen: 8
+					},
+					"usuario.login": {
+						title: "Agente",
+						style: { "text-align": "center", "width": "100px"  }
+					},
+					"dataHora": {
+						title: "Data",
+						style: { "text-align": "center", "min-width": "120px", "width": "120px" },
+						type: "date",
+						format: "DD-MM-YYYY HH:mm:ss"
+					},
+					"pontosAit": {
+						title: "Pontos",
+						style: { "text-align": "center", "width": "100px" },
+						type: "numeric"
+					},
+					"local": {
+						title: "Local",
+						style: { "text-align": "left" },
+						maxLen: 50
+					}
+				},
+				pagesParameters: {
+					currentPage: "currentPage",
+					maxPerPage: "maxResults"
+				},
+				currentPage: 0,
+				maxPerPage: 10
 			});
-			//$("#tabela").load();
+			$("#tabela").load();
 		});
 	</script>
 	<style>

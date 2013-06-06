@@ -3,17 +3,20 @@
 	var jTable2 = function(el, settings) {
 		this.element = el;
 		this.settings = {
+			title : null,
 			url : null,
 			requestMethod : null,
 			requestParameters : null,
 			debug : null,
 			callback : null,
-			fields : [],
-			lang: null,
-			filtering: false,
-			rootNode: null,
-			totalPagesNode: null,
-			currentPage: 0
+			fields : {},
+			lang : null,
+			filtering : false,
+			rootNode : null,
+			totalPagesNode : null,
+			currentPage : null,
+			maxPerPage : null,
+			pagesParameters : null
 		};
 		this.initialize(settings);
 	};
@@ -25,7 +28,7 @@
 	 */
 	jTable2.prototype.log = function(msg) {
 		if (this.settings.debug) {
-			jTable2.logger(msg);	
+			jTable2.logger(msg);
 		}
 	};
 
@@ -35,38 +38,60 @@
 	jTable2.prototype.initialize = function(settings) {
 		this.setSettings(settings);
 		var instance = this;
-		var content = "<div class='jtable2'><div class='filterArea'></div><div class='resultArea'></div><div class='paginatingArea'></div></div>";
+		var content = "<div class='jtable2'>";
+		content += "<div class='tableTitle'></div>";
+		content += "<div class='filterArea'></div>";
+		content += "<div class='resultArea'></div>";
+		content += "<div class='paginatingArea'></div>";
+		content += "</div>";
 		$(this.element).html(content);
+		$(this.element).find(".tableTitle").html(this.settings.title);
 		if (this.settings.filtering) {
 			var filterArea = $(this.element).find(".filterArea")[0];
+
 			$(filterArea).append("<div class='filters'></div>");
-			$(filterArea).append("<div class='filtersAdd'>"+
-				jTable2.getMessage("add.filter", this.settings.lang)
-				+"</div>");
-			$(filterArea).append("<div class='filtersSearch'>"+
-				jTable2.getMessage("search", this.settings.lang)
-				+"</div>");
+
+			$(filterArea).append(
+					"<div class='filtersAdd'>"
+							+ jTable2.getMessage("add.filter",
+									this.settings.lang) + "</div>");
+
+			$(filterArea).append(
+					"<div class='filtersSearch'>"
+							+ jTable2.getMessage("search", this.settings.lang)
+							+ "</div>");
+
+			/**
+			 * add filters button
+			 */
 			var filtersAdd = $(this.element).find(".filterArea .filtersAdd")[0];
-			var filtersSearch = $(this.element).find(".filterArea .filtersSearch")[0];
-			$(filtersAdd).click(function() {
-				instance.log("filtersAdd");
-				var field = instance.getField("date");
-				$(instance.element).find(".filterArea .filters").append(field.title+" <input class='textfilter' type='text' /><br />");
-			});
+			var filtersSearch = $(this.element).find(
+					".filterArea .filtersSearch")[0];
+			$(filtersAdd)
+					.click(
+							function() {
+								instance.log("filtersAdd");
+								var field = instance.getField("dataHora");
+								$(instance.element)
+										.find(".filterArea .filters")
+										.append(
+												field.title
+														+ " <input class='textfilter' type='text' /><br />");
+							});
 			$(filtersSearch).click(function() {
 				instance.load();
 			});
 			$(filterArea).show();
 		}
 	};
-	
+
 	/**
-	 * get field
+	 * get field (column) information
 	 */
 	jTable2.prototype.getField = function(field) {
-		for (var i = 0; i < this.settings.fields.length; i++) {
-			if (this.settings.fields[i].field == field) {
-				return this.settings.fields[i];
+		for ( var f in this.settings.fields) {
+			if (f == field) {
+				return this.settings.fields[f];
 			}
 		}
 		return null;
@@ -96,13 +121,19 @@
 	 */
 	jTable2.prototype.load = function() {
 		var instance = this;
+		var req = this.settings.requestParameters;
+		var pages = {};
+		pages[this.settings.pagesParameters["currentPage"]] = this.settings.currentPage;
+		pages[this.settings.pagesParameters["maxPerPage"]] = this.settings.maxPerPage;
+		req = jTable2.mergeObjects(req, pages);
 		$.ajax({
 			type : this.settings.requestMethod,
 			url : this.settings.url,
-			data : this.settings.requestParameters,
+			data : req,
 			success : function(json) {
 				instance.processResult(json);
-				if (instance.settings.callback != null && typeof instance.settings.callback == "function") {
+				if (instance.settings.callback != null
+						&& typeof instance.settings.callback == "function") {
 					instance.settings.callback();
 				}
 			},
@@ -124,53 +155,139 @@
 		var total = json[this.settings.totalPagesNode];
 		if (typeof root != "undefined") {
 			var content = "<table>";
+
+			/**
+			 * head
+			 */
 			content += "<thead><tr>";
-			for (var i = 0; i < this.settings.fields.length; i++) {
-				var fieldInfo = this.settings.fields[i];
-				content += "<th>";
+			for ( var f in this.settings.fields) {
+				var fieldInfo = this.settings.fields[f];
+				content += "<th><div class='columnTitle'>";
 				content += fieldInfo.title;
-				content += "</th>";
+				content += "<div class='icon'></div></div></th>";
 			}
 			content += "</tr></thead>";
+
+			/**
+			 * body
+			 */
 			content += "<tbody>";
 			var odd = true;
-			for (var i = 0; i < root.length; i++) {
+			for ( var i = 0; i < root.length; i++) {
 				var tuple = root[i];
-				content += "<tr class='"+(odd?"odd":"even")+"'>";
-				for (var x = 0; x < this.settings.fields.length; x++) {
-					var fieldInfo = this.settings.fields[x];
-					var converter = fieldInfo["converter"];
-					var v = tuple[fieldInfo.field];
-					if (typeof converter != "undefined") {
-						v = converter(v);
-					}
+				content += "<tr class='" + (odd ? "odd" : "even") + "'>";
+				for ( var f in this.settings.fields) {
+					var fieldInfo = this.settings.fields[f];
+					/**
+					 * value for column f
+					 */
+					var fieldVal = jTable2.getNodeField(tuple, f) || "";
+					/**
+					 * type of column
+					 */
+					var type = fieldInfo["type"] || null;
+					/**
+					 * formatter of column (for date or number)
+					 */
+					var format = fieldInfo["format"] || null;
+					/**
+					 * converter for value (if defined converter, this will be
+					 * used)
+					 */
+					var maxLen = fieldInfo["maxLen"] || 0;
+					var converter = fieldInfo["converter"]
+							|| function(val) {
+								if (val.length != 0) {
+									var res = null;
+									switch (type) {
+									case "date":
+										res = (format != null) ? moment(
+												new Date(val)).format(format)
+												: new Date(val);
+										break;
+
+									default:
+										res = val;
+										if (maxLen > 0 && val.length > maxLen) {
+											res = val.substring(0, maxLen)
+													+ "...";
+										}
+										break;
+									}
+									return res;
+								} else {
+									return val;
+								}
+							};
+					fieldVal = converter(fieldVal);
 					var s = [];
-					for (var st in fieldInfo.style) {
-						s.push(st+": "+fieldInfo.style[st]);
+					for ( var st in fieldInfo.style) {
+						s.push(st + ": " + fieldInfo.style[st]);
 					}
-					content += "<td style='"+s.join(";")+"'>"+v+"</td>";
+					content += "<td style='" + s.join(";") + "'>" + fieldVal
+							+ "</td>";
 				}
 				content += "</tr>";
-				odd = (odd)?false:true;
+				odd = (odd) ? false : true;
 			}
 			content += "</tbody>";
 			content += "</table>";
+			/**
+			 * insert result table
+			 */
 			$(this.element).find(".resultArea").html(content);
-			$(instance.element).find(".resultArea").css('height', '300px');
-			//$(instance.element).find(".resultArea").fadeIn('normal');
-			
-			$(this.element).find(".resultArea table thead th").click(function(){
-				$(instance.element).find(".resultArea table thead th").each(function (i, e) {
-					$(e).removeClass("selected");
+
+			/**
+			 * add column order controls
+			 */
+			$(this.element)
+					.find(".resultArea table thead th")
+					.click(
+							function() {
+								var asc = ($(this).find(
+										".icon.ui-icon-triangle-1-s").length == 1 || $(
+										this).find(".icon").length == 0);
+								$(instance.element).find(
+										".resultArea table thead th").each(
+										function(i, e) {
+											$(e).removeClass();
+											var icon = $(e).find(".icon");
+											icon.removeClass();
+											icon.addClass("icon");
+										});
+								$(this).addClass("selected");
+								$(this).find(".icon").addClass("selectedIcon");
+								$(this).find(".icon").addClass("ui-icon");
+								$(this).find(".icon").addClass(
+										"ui-icon-triangle-1-"
+												+ (asc ? "n" : "s"));
+							});
+
+			/**
+			 * paginating
+			 */
+			content = "<ul class='pager'>";
+			for ( var i = 0; i < total; i++) {
+				content += "<li><a href='javascript:;' rel='" + i + "'>"
+						+ (i + 1) + "</a></li>";
+			}
+			content += "</ul>";
+			$(instance.element).find(".paginatingArea").html(content);
+			var pagerButtons = $(instance.element).find(
+					".paginatingArea ul.pager li");
+			for ( var i = 0; i < pagerButtons.length; i++) {
+				$(pagerButtons[i]).click(function() {
+					var page = $(this).find("a").attr('rel');
+					instance.settings.currentPage = page;
+					instance.load();
+					return false;
 				});
-				$(this).addClass("selected");
-			});
-			this.log(root);
-			this.log(total);
+			}
 
 			$(instance.element).find(".paginatingArea").fadeIn('fast');
 		} else {
-			this.log("fatal: root node not found ("+this.settings.rootNode+")");
+			this.log("fatal: root node not found (" + this.settings.rootNode
+					+ ")");
 		}
 	};
 
@@ -182,33 +299,87 @@
 	/**
 	 * internationalization
 	 */
+	jTable2.defaultLang = "en";
 	jTable2.messages = {
-		"empty.table": {
-			"en": "Empty table",
-			"pt": "Tabela vazia"
+		"empty.table" : {
+			"en" : "Empty table",
+			"pt" : "Tabela vazia"
 		},
-		"not.loaded": {
-			"en": "Not loaded data",
-			"pt": "Dados não carregados"
+		"not.loaded" : {
+			"en" : "Not loaded data",
+			"pt" : "Dados não carregados"
 		},
-		"add.filter": {
-			"en": "Add filter",
-			"pt": "Adicionar filtro"
+		"add.filter" : {
+			"en" : "Add filter",
+			"pt" : "Adicionar filtro"
 		},
-		"search": {
-			"en": "Search",
-			"pt": "Buscar"
+		"search" : {
+			"en" : "Search",
+			"pt" : "Buscar"
 		},
-		"inverval": {
-			"en": "Interval",
-			"pt": "Intervalo"
+		"inverval" : {
+			"en" : "Interval",
+			"pt" : "Intervalo"
 		}
 	};
+
+	/**
+	 * get message in selected or default language
+	 * 
+	 * @param key
+	 * @param lang
+	 * @returns
+	 */
 	jTable2.getMessage = function(key, lang) {
-		var l = (typeof lang != "undefined" && lang != null) ? lang : ((navigator.language) ? navigator.language : navigator.userLanguage);
+		var l = (typeof lang != "undefined" && lang != null) ? lang
+				: ((navigator.language) ? navigator.language
+						: navigator.userLanguage);
 		l = l.split("-")[0];
-		var msg = typeof jTable2.messages[key][lang] != "undefined" ? jTable2.messages[key][l] : jTable2.messages[key]["en"];
+		var msg = typeof jTable2.messages[key][lang] != "undefined" ? jTable2.messages[key][l]
+				: jTable2.messages[key][jTable2.defaultLang];
 		return msg;
+	};
+
+	/**
+	 * merge two objects
+	 * 
+	 * @param o1
+	 * @param o2
+	 * @returns merged object
+	 */
+	jTable2.mergeObjects = function(o1, o2) {
+		var o3 = {};
+		for ( var attrname in o1) {
+			o3[attrname] = o1[attrname];
+		}
+		for ( var attrname in o2) {
+			o3[attrname] = o2[attrname];
+		}
+		return o3;
+	};
+
+	/**
+	 * get node of tuple element: for t.user.name, call function(t, "user.name")
+	 * 
+	 * @param node
+	 * @param field
+	 * @returns
+	 */
+	jTable2.getNodeField = function(node, field) {
+		if (typeof node == "undefined" || node == null)
+			return null;
+		var path = field.split(".");
+		var res = node[path[0]];
+		for ( var i = 1; i < path.length; i++) {
+			if (res != null && res != "undefined"
+					&& typeof res[path[i]] != "undefined")
+				res = res[path[i]];
+			else
+				return "";
+		}
+		if (typeof res == "undefined")
+			res = "";
+		return res;
 	};
 
 	/**
@@ -248,8 +419,14 @@
 			debug : false,
 			maxPagesViewed : 15,
 			requestMethod : "POST",
-			rootNode: "list",
-			totalPagesNode: "total"
+			rootNode : "list",
+			totalPagesNode : "total",
+			currentPage : 0,
+			maxPerPage : 10,
+			pagesParameters : {
+				currentPage : "currentPage",
+				maxPerPage : "maxPerPage"
+			}
 		};
 		if (typeof settings == "undefined") {
 			settings = {};
@@ -293,7 +470,9 @@
 				 * set page matched instances
 				 */
 				for ( var i = 0; i < this.length; i++) {
-					jTable2.getInstance(this[i]).setSettings({currentPage: page});
+					jTable2.getInstance(this[i]).setSettings({
+						currentPage : page
+					});
 				}
 			}
 		});
