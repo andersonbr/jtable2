@@ -1,5 +1,13 @@
 @CHARSET "UTF-8";
 
+body {
+	spacing: 100px;
+}
+
+.ui-widget {
+	font-size: 12px;
+}
+
 .jtable2 {
 	border: 1px solid #d0d0d0;
 	font-family: arial, tahoma;
@@ -41,8 +49,14 @@
 	/* IE10+ */
 	background: linear-gradient(to bottom, #3a75af 0%, #336699 100%);
 	/* W3C */
-	filter: progid:DXImageTransform.Microsoft.gradient(          startColorstr='#3a75af',
+	filter: progid:DXImageTransform.Microsoft.gradient(            startColorstr='#3a75af',
 		endColorstr='#336699', GradientType=0); /* IE6-8 */
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
 /**
@@ -50,7 +64,6 @@
   */
 .jtable2 .filterArea {
 	background-color: #e0e0e0;
-	border-bottom: 1px solid #d0d0d0;
 	padding: 5px;
 	min-height: 27px;
 	-webkit-touch-callout: none;
@@ -112,9 +125,11 @@
   * result
   */
 .jtable2 .resultArea {
+	border-top: 1px solid #d0d0d0;
 	padding: 0px;
-	min-height: 27px;
+	min-height: 0px;
 	overflow: auto;
+	display: none;
 }
 
 .jtable2 .resultArea table {
@@ -197,7 +212,7 @@
 	/* IE10+ */
 	background: linear-gradient(to bottom, #ebeff4 0%, #bac9dd 100%);
 	/* W3C */
-	filter: progid:DXImageTransform.Microsoft.gradient(     startColorstr='#ebeff4',
+	filter: progid:DXImageTransform.Microsoft.gradient(       startColorstr='#ebeff4',
 		endColorstr='#bac9dd', GradientType=0); /* IE6-8 */
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
@@ -209,15 +224,11 @@
 
 .jtable2 .paginatingArea ul {
 	display: block;
-	list-style-type: none;
-	-webkit-margin-before: 0px;
-	-webkit-margin-after: 0px;
-	-webkit-margin-start: 0px;
-	-webkit-margin-end: 0px;
-	-webkit-padding-start: 0px;
+	margin: 0px;
 	position: absolute;
 	right: 0px;
 	top: 5px;
+	position: absolute;
 }
 
 .jtable2 .paginatingArea li {
@@ -233,7 +244,8 @@
 	border-left: 1px solid #cfcfcf;
 	border-right: 1px solid #c4c4c4;
 	border-bottom: 1px solid #c4c4c4;
-	background-color: #f0f0f0; color : #4A4A4A;
+	background-color: #f0f0f0;
+	color: #4A4A4A;
 	font-weight: bold;
 	cursor: pointer;
 	color: #4A4A4A;
@@ -241,5 +253,13 @@
 
 .jtable2 .paginatingArea li a {
 	text-decoration: none;
-	color: black;
+	color: #999;
+}
+
+.jtable2 .paginatingArea li a.current {
+	color: #3a75af;
+}
+
+.jtable2 .paginatingArea li.current {
+	border: 1px solid #3a75af;
 }

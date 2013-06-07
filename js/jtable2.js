@@ -1,7 +1,11 @@
 (function($) {
 
+	/***************************************************************************
+	 * jTable2 class to instantiate for each matched div
+	 */
 	var jTable2 = function(el, settings) {
 		this.element = el;
+		this.requestLockeded = false;
 		this.settings = {
 			title : null,
 			url : null,
@@ -13,11 +17,13 @@
 			lang : null,
 			filtering : false,
 			rootNode : null,
+			maxPagesViewed : null,
 			totalPagesNode : null,
 			currentPage : null,
 			maxPerPage : null,
 			pagesParameters : null
 		};
+		this.filterDialog = null;
 		this.initialize(settings);
 	};
 
@@ -47,6 +53,7 @@
 		$(this.element).html(content);
 		$(this.element).find(".tableTitle").html(this.settings.title);
 		if (this.settings.filtering) {
+
 			var filterArea = $(this.element).find(".filterArea")[0];
 
 			$(filterArea).append("<div class='filters'></div>");
@@ -71,17 +78,158 @@
 					.click(
 							function() {
 								instance.log("filtersAdd");
-								var field = instance.getField("dataHora");
-								$(instance.element)
-										.find(".filterArea .filters")
-										.append(
-												field.title
-														+ " <input class='textfilter' type='text' /><br />");
+								/*
+								 * var field = instance.getField("dataHora");
+								 * $(instance.element) .find(".filterArea
+								 * .filters") .append( field.title + " <input
+								 * class='textfilter' type='text' /><br />");
+								 */
+								instance.getFilterDialog();
+
+								/**
+								 * dialog content
+								 */
+								instance.filterDialog.text("");
+								for ( var f in instance.settings.fields) {
+									var fieldInfo = instance.settings.fields[f];
+									instance.filterDialog
+											.append(" <input type='checkbox' value='"
+													+ f
+													+ "' /> "
+													+ fieldInfo.title
+													+ "<br />");
+								}
+								/**
+								 * buttons
+								 */
+								var dialogButtons = {};
+								dialogButtons[jTable2.getMessage("add.filters",
+										instance.settings.lang)] = function() {
+									instance.filterDialog
+											.find(
+													"input[type=checkbox]:checked")
+											.each(
+													function(i, e) {
+														var fieldInfo = instance.settings.fields[e.value];
+														$(instance.element)
+																.find(
+																		".filterArea .filters")
+																.append(
+																		fieldInfo.title
+																				+ "<input class='textfilter' name='"
+																				+ e.value
+																				+ "' type='text' /><br />");
+														if (fieldInfo.type == "datetime") {
+															var dateFormat = fieldInfo.format
+																	.split(" ")[0]
+																	|| "mm/dd/yy";
+															var timeFormat = fieldInfo.format
+																	.split(" ")[1]
+																	|| "HH:mm:ss";
+															var el = $(
+																	instance.element)
+																	.find(
+																			".filterArea .filters input[name="
+																					+ e.value
+																					+ "]");
+															el
+																	.datetimepicker({
+																		dateFormat : dateFormat,
+																		timeFormat : timeFormat
+																	});
+															el
+																	.datetimepicker(
+																			"option",
+																			$.datepicker.regional["pt"]);
+															el
+																	.datetimepicker(
+																			"option",
+																			$.timepicker.regional["pt"]);
+														} else if (fieldInfo.type == "numeric") {
+															var el = $(
+																	instance.element)
+																	.find(
+																			".filterArea .filters input[name="
+																					+ e.value
+																					+ "]");
+															el
+																	.attr(
+																			"onkeypress",
+																			"return event.charCode >= 48 && event.charCode <= 57");
+														}
+													});
+									$(this).dialog("close");
+								};
+								dialogButtons[jTable2.getMessage("cancel",
+										instance.settings.lang)] = function() {
+									$(this).dialog("close");
+								};
+								instance.filterDialog.dialog("option",
+										"buttons", dialogButtons);
+
+								/**
+								 * open dialog
+								 */
+								instance.filterDialog.dialog('open');
 							});
 			$(filtersSearch).click(function() {
 				instance.load();
 			});
 			$(filterArea).show();
+
+			/**
+			 * keydown to pass pages
+			 */
+			$(instance.element).attr("tabindex", 1);
+			$(instance.element)
+					.bind(
+							"keydown",
+							function(event) {
+								var current = 38;
+								var inc = event.keyCode - current;
+								if (inc == 1 || inc == -1) {
+									var newPage = (instance.settings.currentPage + inc);
+									if (newPage >= 0
+											&& newPage < instance.settings.totalPages) {
+
+										/**
+										 * go to new page
+										 */
+										instance.goToPage(newPage);
+									}
+								}
+							});
+		}
+	};
+
+	jTable2.prototype.getFilterDialog = function() {
+		if (this.filterDialog == null) {
+			$(this.element).append(
+					"<div class='filtersDialog' style='display: none'></div>");
+			var dialogDiv = $(this.element).find(".filtersDialog");
+			this.filterDialog = $(dialogDiv).dialog({
+				title : jTable2.getMessage("add.filter", this.settings.lang),
+				modal : true,
+				closeOnEscape : true
+			});
+		}
+		;
+	};
+
+	/**
+	 * go to new page
+	 */
+	jTable2.prototype.goToPage = function(page) {
+		if (!this.isRequestLocked()) {
+			/**
+			 * change page
+			 */
+			this.settings.currentPage = page;
+
+			/**
+			 * reload page
+			 */
+			this.load();
 		}
 	};
 
@@ -119,28 +267,68 @@
 	/**
 	 * request
 	 */
+	jTable2.prototype.isRequestLocked = function() {
+		return this.requestLocked;
+	};
+
+	jTable2.prototype.requestLock = function() {
+		this.requestLocked = true;
+	};
+
+	jTable2.prototype.requestUnlock = function() {
+		this.requestLocked = false;
+	};
+
 	jTable2.prototype.load = function() {
 		var instance = this;
-		var req = this.settings.requestParameters;
-		var pages = {};
-		pages[this.settings.pagesParameters["currentPage"]] = this.settings.currentPage;
-		pages[this.settings.pagesParameters["maxPerPage"]] = this.settings.maxPerPage;
-		req = jTable2.mergeObjects(req, pages);
-		$.ajax({
-			type : this.settings.requestMethod,
-			url : this.settings.url,
-			data : req,
-			success : function(json) {
-				instance.processResult(json);
-				if (instance.settings.callback != null
-						&& typeof instance.settings.callback == "function") {
-					instance.settings.callback();
+		if (!this.isRequestLocked()) {
+			this.requestLock();
+			var req = this.settings.requestParameters;
+
+			/**
+			 * sort parameters
+			 */
+			var order = {};
+			for ( var f in this.settings.fields) {
+				var cf = this.settings.fields[f];
+				if (typeof cf.order != "undefined"
+						&& (cf.order.toLowerCase() == "asc" || cf.order
+								.toLowerCase() == "desc")) {
+					order = {
+						"sort[0].key" : f,
+						"sort[0].value" : cf.order.toUpperCase()
+					};
+					break;
 				}
-			},
-			error : function(XMLHttpRequest, textStatus, errorThrown) {
-				instance.log("error");
 			}
-		});
+			req = jTable2.mergeObjects(req, order);
+			/**
+			 * page parameters
+			 */
+			var pages = {};
+			pages[this.settings.pagesParameters["currentPage"]] = this.settings.currentPage;
+			pages[this.settings.pagesParameters["maxPerPage"]] = this.settings.maxPerPage;
+			req = jTable2.mergeObjects(req, pages);
+			$
+					.ajax({
+						type : this.settings.requestMethod,
+						url : this.settings.url,
+						data : req,
+						success : function(json) {
+							instance.requestUnlock();
+							instance.processResult(json);
+							if (instance.settings.callback != null
+									&& typeof instance.settings.callback == "function") {
+								instance.settings.callback();
+							}
+						},
+						error : function(XMLHttpRequest, textStatus,
+								errorThrown) {
+							instance.requestUnlock();
+							instance.log("error");
+						}
+					});
+		}
 	};
 
 	/**
@@ -153,6 +341,16 @@
 		 */
 		var root = json[this.settings.rootNode];
 		var total = json[this.settings.totalPagesNode];
+		this.settings.totalPages = total;
+
+		/**
+		 * if opened a page bigger than total
+		 */
+		if (this.settings.currentPage >= total) {
+			this.goToPage(total - 1);
+			return;
+		}
+
 		if (typeof root != "undefined") {
 			var content = "<table>";
 
@@ -162,9 +360,23 @@
 			content += "<thead><tr>";
 			for ( var f in this.settings.fields) {
 				var fieldInfo = this.settings.fields[f];
-				content += "<th><div class='columnTitle'>";
+				var classes = "icon";
+				var thclasses = "";
+				if (typeof this.settings.fields[f].order != "undefined") {
+					/**
+					 * define presentation to column order
+					 */
+					var asc = (this.settings.fields[f].order.toLowerCase() == "asc") ? true
+							: false;
+					classes += (" selectedIcon ui-icon " + ("ui-icon-triangle-1-" + (asc ? "n"
+							: "s")));
+					thclasses = " class='selected'";
+				}
+				content += "<th" + thclasses
+						+ "><div class='columnName' style='display: none'>" + f
+						+ "</div><div class='columnTitle'>";
 				content += fieldInfo.title;
-				content += "<div class='icon'></div></div></th>";
+				content += "<div class='" + classes + "'></div></div></th>";
 			}
 			content += "</tr></thead>";
 
@@ -182,6 +394,7 @@
 					 * value for column f
 					 */
 					var fieldVal = jTable2.getNodeField(tuple, f) || "";
+					var fieldFullVal = null;
 					/**
 					 * type of column
 					 */
@@ -201,14 +414,38 @@
 									var res = null;
 									switch (type) {
 									case "date":
+										var momentFormat = format || "mm/dd/yy";
+										momentFormat = momentFormat.replace(
+												/([^y]|^)(yy)([^y])/,
+												"$1YYYY$3");
+										momentFormat = momentFormat.replace(
+												/([^d]|^)(dd)([^d])/, "$1DD$3");
+										momentFormat = momentFormat.replace(
+												/([^m]|^)(mm)([^m])/, "$1MM$3");
 										res = (format != null) ? moment(
-												new Date(val)).format(format)
-												: new Date(val);
+												new Date(val)).format(
+												momentFormat) : new Date(val);
+										break;
+									case "datetime":
+										var momentFormat = format
+												|| "mm/dd/yy hh:mm:ss";
+										momentFormat = momentFormat.replace(
+												/([^y]|^)(yy)([^y])/,
+												"$1YYYY$3");
+										momentFormat = momentFormat.replace(
+												/([^d]|^)(dd)([^d])/, "$1DD$3");
+										momentFormat = momentFormat.replace(
+												/([^m]|^)(mm)([^m])/, "$1MM$3");
+										res = (format != null) ? moment(
+												new Date(val)).format(
+												momentFormat) : new Date(val);
 										break;
 
 									default:
 										res = val;
 										if (maxLen > 0 && val.length > maxLen) {
+											fieldFullVal = val.replace(
+													/(['"])/g, "\\$1"); // escape
 											res = val.substring(0, maxLen)
 													+ "...";
 										}
@@ -220,12 +457,23 @@
 								}
 							};
 					fieldVal = converter(fieldVal);
+
+					/**
+					 * compile styles
+					 */
 					var s = [];
 					for ( var st in fieldInfo.style) {
 						s.push(st + ": " + fieldInfo.style[st]);
 					}
-					content += "<td style='" + s.join(";") + "'>" + fieldVal
-							+ "</td>";
+
+					/**
+					 * set cell
+					 */
+					fieldFullVal = (fieldFullVal != null) ? " title='"
+							+ fieldFullVal + "' " : "";
+
+					content += "<td style='" + s.join(";") + "' "
+							+ fieldFullVal + ">" + fieldVal + "</td>";
 				}
 				content += "</tr>";
 				odd = (odd) ? false : true;
@@ -236,6 +484,7 @@
 			 * insert result table
 			 */
 			$(this.element).find(".resultArea").html(content);
+			$(this.element).find(".resultArea").show();
 
 			/**
 			 * add column order controls
@@ -244,6 +493,11 @@
 					.find(".resultArea table thead th")
 					.click(
 							function() {
+								/**
+								 * change presentation to column order
+								 */
+								var colName = $(this).find(".columnName")
+										.text();
 								var asc = ($(this).find(
 										".icon.ui-icon-triangle-1-s").length == 1 || $(
 										this).find(".icon").length == 0);
@@ -261,28 +515,60 @@
 								$(this).find(".icon").addClass(
 										"ui-icon-triangle-1-"
 												+ (asc ? "n" : "s"));
+								/**
+								 * remove order for all
+								 */
+								for ( var f in instance.settings.fields) {
+									delete instance.settings.fields[f].order;
+								}
+								;
+								/**
+								 * define column order
+								 */
+								instance.settings.fields[colName].order = (asc ? "asc"
+										: "desc");
+								instance.load();
 							});
 
 			/**
 			 * paginating
 			 */
+			var startPage = this.settings.currentPage
+					- parseInt((this.settings.maxPagesViewed / 2), 10);
+			if (startPage < 0)
+				startPage = 0;
+			var lastPage = startPage + this.settings.maxPagesViewed;
+			if (lastPage > total) {
+				startPage -= (lastPage - total);
+			}
 			content = "<ul class='pager'>";
-			for ( var i = 0; i < total; i++) {
+			for ( var i = startPage; i < total && i < lastPage; i++) {
 				content += "<li><a href='javascript:;' rel='" + i + "'>"
 						+ (i + 1) + "</a></li>";
 			}
 			content += "</ul>";
-			$(instance.element).find(".paginatingArea").html(content);
+			$(this.element).find(".paginatingArea").html(content);
 			var pagerButtons = $(instance.element).find(
 					".paginatingArea ul.pager li");
 			for ( var i = 0; i < pagerButtons.length; i++) {
 				$(pagerButtons[i]).click(function() {
-					var page = $(this).find("a").attr('rel');
-					instance.settings.currentPage = page;
-					instance.load();
+					var page = parseInt($(this).find("a").attr('rel'), 10);
+					instance.goToPage(page);
 					return false;
 				});
 			}
+
+			/**
+			 * change style pager
+			 */
+			$(this.element).find(".paginatingArea li").removeClass();
+			$(this.element).find(".paginatingArea a").removeClass();
+			$(this.element).find(
+					".paginatingArea a[rel=" + this.settings.currentPage + "]")
+					.addClass("current");
+			$(this.element).find(
+					".paginatingArea a[rel=" + this.settings.currentPage + "]")
+					.parent().addClass("current");
 
 			$(instance.element).find(".paginatingArea").fadeIn('fast');
 		} else {
@@ -312,6 +598,14 @@
 		"add.filter" : {
 			"en" : "Add filter",
 			"pt" : "Adicionar filtro"
+		},
+		"add.filters" : {
+			"en" : "Add filters",
+			"pt" : "Adicionar filtros"
+		},
+		"cancel" : {
+			"en" : "Cancel",
+			"pt" : "Cancelar"
 		},
 		"search" : {
 			"en" : "Search",
@@ -410,30 +704,31 @@
 		}
 	};
 
+	/***************************************************************************
+	 * JQuery extension
+	 */
 	$.fn.jTable2 = function(settings) {
 
 		/**
 		 * default settings
 		 */
-		var defaultSettings = {
+		settings = $.extend({
 			debug : false,
-			maxPagesViewed : 15,
+			maxPagesViewed : 7,
 			requestMethod : "POST",
 			rootNode : "list",
 			totalPagesNode : "total",
 			currentPage : 0,
+			totalPages : -1,
 			maxPerPage : 10,
 			pagesParameters : {
 				currentPage : "currentPage",
 				maxPerPage : "maxPerPage"
 			}
-		};
-		if (typeof settings == "undefined") {
-			settings = {};
-		}
+		}, settings);
 
 		/**
-		 * external methods
+		 * external methods to div
 		 */
 		$.fn.extend({
 			load : function() {
@@ -483,25 +778,52 @@
 		$(this).each(function(i, e) {
 			var instance = jTable2.getInstance(e);
 			/**
-			 * compile settings
-			 */
-
-			var compiledSettings = settings;
-			for ( var v in defaultSettings) {
-				if (typeof compiledSettings[v] == "undefined") {
-					compiledSettings[v] = defaultSettings[v];
-				}
-			}
-
-			/**
 			 * create new instance to this element, if not exist
 			 */
 			if (instance == null) {
-				instance = new jTable2(e, compiledSettings);
+				instance = new jTable2(e, settings);
 				jTable2.instances.push(instance);
 			} else {
-				instance.setSettings(compiledSettings);
+				instance.setSettings(settings);
 			}
 		});
 	};
 })(jQuery);
+
+$.datepicker.regional['pt'] = {
+	closeText : 'Fechar',
+	prevText : '&#x3c;Anterior',
+	nextText : 'Pr&oacute;ximo&#x3e;',
+	currentText : 'Hoje',
+	monthNames : [ 'Janeiro', 'Fevereiro', 'Mar&ccedil;o', 'Abril', 'Maio',
+			'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro',
+			'Dezembro' ],
+	monthNamesShort : [ 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago',
+			'Set', 'Out', 'Nov', 'Dez' ],
+	dayNames : [ 'Domingo', 'Segunda-feira', 'Ter&ccedil;a-feira',
+			'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sabado' ],
+	dayNamesShort : [ 'Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab' ],
+	dayNamesMin : [ 'Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab' ],
+	weekHeader : 'Sm',
+	dateFormat : 'dd/mm/yy',
+	firstDay : 0,
+	isRTL : false,
+	showMonthAfterYear : false,
+	yearSuffix : ''
+};
+
+$.timepicker.regional['pt'] = {
+	timeOnlyTitle : 'Escolha uma hora',
+	timeText : 'Tempo',
+	hourText : 'Hora',
+	minuteText : 'Minuto',
+	secondText : 'Segundo',
+	millisecText : 'Milisegundo',
+	timezoneText : 'Fuso hor&aacute;rio',
+	currentText : 'Agora',
+	closeText : 'Fechar',
+	timeFormat : 'HH:mm',
+	amNames : [ 'AM', 'A' ],
+	pmNames : [ 'PM', 'P' ],
+	isRTL : false
+};

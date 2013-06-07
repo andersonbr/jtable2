@@ -4,13 +4,14 @@
 	<title></title>
 	<meta charset="utf-8">
 	<meta http-equiv="cache-control" content="no-cache">
-	<link rel="stylesheet" media="all" href="css/jtable2.css">
 	<link rel="stylesheet" media="all" href="css/ui-lightness/jquery-ui-1.10.3.custom.min.css">
+	<link rel="stylesheet" media="all" href="css/jtable2.css">
 	<script src="js/jquery-1.10.1.min.js"></script>
 	<script src="js/jquery-ui-1.10.3.custom.min.js"></script>
 	<script src="js/jquery-ui-timepicker-addon.js"></script>
 	<script src="js/jtable2.js"></script>
 	<script src="js/moment.min.js"></script>
+<!-- 	<script src="js/shortcut.js"></script> -->
 	<script>
 		$(window).ready(function(){
 			$("#tabela").jTable2({
@@ -18,29 +19,31 @@
 				filtering: true,
 				url: "/TalaoEletronicoServer/ait/listarTabela/",
 				lang: "pt",
+				maxPagesViewed : 5,
 				fields: {
 					"ait":   {
 						title: "AIT",
-						style: { "text-align": "center", "width": "100px" }
+						style: { "text-align": "center", "width": "80px" }
 					},
 					"veiculo.placaCodigo": {
 						title: "Placa",
-						style: { "text-align": "center", "width": "100px"  },
+						style: { "text-align": "center", "width": "80px"  },
 						maxLen: 8
 					},
 					"usuario.login": {
 						title: "Agente",
-						style: { "text-align": "center", "width": "100px"  }
+						style: { "text-align": "center", "width": "70px"  }
 					},
 					"dataHora": {
 						title: "Data",
 						style: { "text-align": "center", "min-width": "120px", "width": "120px" },
-						type: "date",
-						format: "DD-MM-YYYY HH:mm:ss"
+						type: "datetime",
+						format: "dd/mm/yy HH:mm:ss",
+						order: "desc"
 					},
 					"pontosAit": {
 						title: "Pontos",
-						style: { "text-align": "center", "width": "100px" },
+						style: { "text-align": "center", "width": "70px" },
 						type: "numeric"
 					},
 					"local": {
@@ -54,9 +57,10 @@
 					maxPerPage: "maxResults"
 				},
 				currentPage: 0,
-				maxPerPage: 10
+				maxPerPage: 12
 			});
 			$("#tabela").load();
+			$("#tabela").focus();
 		});
 	</script>
 	<style>
