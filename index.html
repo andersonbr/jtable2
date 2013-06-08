@@ -15,41 +15,33 @@
 	<script>
 		$(window).ready(function(){
 			$("#tabela").jTable2({
-				title: "Lista de infrações",
+				title: "Lista de usuários",
 				filtering: true,
-				url: "/TalaoEletronicoServer/ait/listarTabela/",
+				url: "/Web/user/search",
+				requestMethod: "POST",
 				lang: "pt",
 				maxPagesViewed : 5,
 				fields: {
-					"ait":   {
-						title: "AIT",
-						style: { "text-align": "center", "width": "80px" }
+					"id":   {
+						title: "ID",
+						style: { "text-align": "center", "width": "100px" },
+						type: "numeric"
 					},
-					"veiculo.placaCodigo": {
-						title: "Placa",
-						style: { "text-align": "center", "width": "80px"  },
-						maxLen: 8
+					"login": {
+						title: "Login",
+						style: { "text-align": "center", "width": "100px"  }
 					},
-					"usuario.login": {
-						title: "Agente",
-						style: { "text-align": "center", "width": "70px"  }
+					"fullName": {
+						title: "Nome",
+						style: { "text-align": "center", "width": "200px"  },
+						maxLen: 50
 					},
-					"dataHora": {
+					"lastmodification": {
 						title: "Data",
-						style: { "text-align": "center", "min-width": "120px", "width": "120px" },
+						style: { "text-align": "center", "min-width": "120px" },
 						type: "datetime",
 						format: "dd/mm/yy HH:mm:ss",
 						order: "desc"
-					},
-					"pontosAit": {
-						title: "Pontos",
-						style: { "text-align": "center", "width": "70px" },
-						type: "numeric"
-					},
-					"local": {
-						title: "Local",
-						style: { "text-align": "left" },
-						maxLen: 50
 					}
 				},
 				pagesParameters: {
@@ -57,7 +49,7 @@
 					maxPerPage: "maxResults"
 				},
 				currentPage: 0,
-				maxPerPage: 12
+				maxPerPage: 5
 			});
 			$("#tabela").load();
 			$("#tabela").focus();

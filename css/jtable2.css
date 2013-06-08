@@ -154,6 +154,9 @@ body {
 	user-select: none;
 	-webkit-touch-callout: none;
 }
+.jtable2 .resultArea table thead th:FIRST-CHILD {
+	min-width: 10px;
+}
 
 .jtable2 .resultArea table thead th .columnTitle {
 	position: relative;

@@ -56,7 +56,7 @@
 
 			var filterArea = $(this.element).find(".filterArea")[0];
 
-			$(filterArea).append("<div class='filters'></div>");
+			$(filterArea).append("<div class='filters'><table style='border-spacing: 0px'></table></div>");
 
 			$(filterArea).append(
 					"<div class='filtersAdd'>"
@@ -78,12 +78,7 @@
 					.click(
 							function() {
 								instance.log("filtersAdd");
-								/*
-								 * var field = instance.getField("dataHora");
-								 * $(instance.element) .find(".filterArea
-								 * .filters") .append( field.title + " <input
-								 * class='textfilter' type='text' /><br />");
-								 */
+
 								instance.getFilterDialog();
 
 								/**
@@ -111,14 +106,18 @@
 											.each(
 													function(i, e) {
 														var fieldInfo = instance.settings.fields[e.value];
+														/**
+														 * adding filter field
+														 */
 														$(instance.element)
 																.find(
-																		".filterArea .filters")
+																		".filterArea .filters table")
 																.append(
-																		fieldInfo.title
-																				+ "<input class='textfilter' name='"
+																		"<tr><td>"
+																				+ fieldInfo.title
+																				+ "</td><td><input class='textfilter' name='"
 																				+ e.value
-																				+ "' type='text' /><br />");
+																				+ "' type='text' /></td></tr>");
 														if (fieldInfo.type == "datetime") {
 															var dateFormat = fieldInfo.format
 																	.split(" ")[0]
@@ -314,6 +313,7 @@
 						type : this.settings.requestMethod,
 						url : this.settings.url,
 						data : req,
+						dataType : 'json',
 						success : function(json) {
 							instance.requestUnlock();
 							instance.processResult(json);
@@ -358,6 +358,7 @@
 			 * head
 			 */
 			content += "<thead><tr>";
+			content += "<th>#</th>";
 			for ( var f in this.settings.fields) {
 				var fieldInfo = this.settings.fields[f];
 				var classes = "icon";
@@ -388,6 +389,9 @@
 			for ( var i = 0; i < root.length; i++) {
 				var tuple = root[i];
 				content += "<tr class='" + (odd ? "odd" : "even") + "'>";
+				content += "<td style='text-align: center; width: 20px'>"
+						+ ((i + 1) + (this.settings.currentPage * this.settings.maxPerPage))
+						+ "</td>";
 				for ( var f in this.settings.fields) {
 					var fieldInfo = this.settings.fields[f];
 					/**
@@ -490,7 +494,7 @@
 			 * add column order controls
 			 */
 			$(this.element)
-					.find(".resultArea table thead th")
+					.find(".resultArea table thead th:not(:first-child)")
 					.click(
 							function() {
 								/**
@@ -540,6 +544,8 @@
 			var lastPage = startPage + this.settings.maxPagesViewed;
 			if (lastPage > total) {
 				startPage -= (lastPage - total);
+				if (startPage < 0)
+					startPage = 0;
 			}
 			content = "<ul class='pager'>";
 			for ( var i = startPage; i < total && i < lastPage; i++) {
