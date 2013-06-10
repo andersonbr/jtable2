@@ -17,33 +17,69 @@
 			$("#tabela").jTable2({
 				title: "Lista de usuários",
 				filtering: true,
-				url: "/Web/user/search",
-				requestMethod: "POST",
+				url: "/TalaoEletronicoServer/ait/listarTabela/",
 				lang: "pt",
 				maxPagesViewed : 5,
 				fields: {
-					"id":   {
-						title: "ID",
-						style: { "text-align": "center", "width": "100px" },
+					"ait":   {
+						title: "AIT",
+						style: { "text-align": "center", "width": "80px" }
+					},
+					"veiculo.placaCodigo": {
+						title: "Placa",
+						style: { "text-align": "center", "width": "80px"  },
+						maxLen: 8
+					},
+					"usuario.login": {
+						title: "Agente",
+						style: { "text-align": "center", "width": "70px"  }
+					},
+					"dataHora": {
+						title: "Data",
+						style: { "text-align": "center", "min-width": "120px", "width": "120px" },
+						type: "datetime",
+						format: "dd/mm/yy hh:mm:ss",
+						order: "desc"
+					},
+					"pontosAit": {
+						title: "Pontos",
+						style: { "text-align": "center", "width": "70px" },
 						type: "numeric"
 					},
-					"login": {
-						title: "Login",
-						style: { "text-align": "center", "width": "100px"  },
-						order: "asc"
-					},
-					"fullName": {
-						title: "Nome",
-						style: { "text-align": "center", "width": "200px"  },
+					"local": {
+						title: "Local",
+						style: { "text-align": "left" },
 						maxLen: 50
-					},
-					"lastmodification": {
-						title: "Data",
-						style: { "text-align": "center", "min-width": "120px" },
-						type: "datetime",
-						format: "dd/mm/yy HH:mm:ss",
-						hidden: true
 					}
+				},
+				enumerate: true,
+				defaultAction: {
+					url: "edit",
+					id: "id"
+				},
+				actions: {
+					"Editar": {
+						url: "edit",
+						id: "id",
+						style: { "text-align": "center", "width": "50px" },
+						buttonClass: "icon ui-icon ui-icon-pencil"
+					},
+					"Deletar": {
+						url: "delete",
+						id: "id",
+						style: { "text-align": "center", "width": "50px" },
+						buttonClass: "icon ui-icon ui-icon-trash"
+					}
+				},
+				multipleActions: {
+					actions: {
+						"Deletar": {
+							url: "",
+							id: "id",
+							styleClass: ""
+						}
+					},
+					style: { "text-align": "center", "width": "30px" }
 				},
 				pagesParameters: {
 					currentPage: "currentPage",

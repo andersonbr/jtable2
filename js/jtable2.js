@@ -1,5 +1,18 @@
 (function($) {
-
+	/**
+	 * define native methods
+	 */
+	if (!Object.keys) {
+		Object.keys = function(obj) {
+			var keys = [], k;
+			for (k in obj) {
+				if (Object.prototype.hasOwnProperty.call(obj, k)) {
+					keys.push(k);
+				}
+			}
+			return keys;
+		};
+	}
 	/***************************************************************************
 	 * jTable2 class to instantiate for each matched div
 	 */
@@ -14,8 +27,11 @@
 			debug : null,
 			callback : null,
 			fields : {},
+			actions : null,
+			multipleActions : null,
 			lang : null,
 			filtering : false,
+			enumerate : false,
 			rootNode : null,
 			maxPagesViewed : null,
 			totalPagesNode : null,
@@ -143,7 +159,7 @@
 		for ( var f in this.settings.fields) {
 			var fieldInfo = this.settings.fields[f];
 			var el = $(this.element).find(
-					".filterArea .filters input[name=" + f + "]");
+					".filterArea .filters input[name='" + f + "']");
 			if (el.length == 0) {
 				this.filterDialog
 						.append(" <input type='checkbox' checked='checked' value='"
@@ -196,14 +212,15 @@
 											".filterArea .filters table");
 
 									if (fieldInfo.type == "datetime"
+											|| fieldInfo.type == "date"
 											|| fieldInfo.type == "numeric") {
 										tableel.append(numericfilter);
 									} else {
 										tableel.append(textfilter);
 									}
 									var el = $(instance.element).find(
-											".filterArea .filters input[name="
-													+ e.value + "]");
+											".filterArea .filters input[name='"
+													+ e.value + "']");
 
 									if (fieldInfo.type == "datetime") {
 										var dateFormat = fieldInfo.format
@@ -224,6 +241,17 @@
 												.datetimepicker(
 														"option",
 														$.timepicker.regional[instance.settings.lang]);
+									} else if (fieldInfo.type == "date") {
+										var dateFormat = fieldInfo.format
+												.split(" ")[0]
+												|| "mm/dd/yy";
+										el.datepicker({
+											dateFormat : dateFormat
+										});
+										el
+												.datepicker(
+														"option",
+														$.datepicker.regional[instance.settings.lang]);
 									} else if (fieldInfo.type == "numeric") {
 										el
 												.attr("onkeypress",
@@ -419,13 +447,15 @@
 		}
 
 		if (typeof root != "undefined") {
-			var content = "<table>";
+			var content = "<table class='resultAreaTable'>";
 
 			/**
 			 * head
 			 */
 			content += "<thead><tr>";
-			content += "<th>#</th>";
+			if (this.settings.enumerate) {
+				content += "<th rowspan=2 class='enumerate nofield'>#</th>";
+			}
 			for ( var f in this.settings.fields) {
 				var fieldInfo = this.settings.fields[f];
 				var classes = "icon";
@@ -440,12 +470,51 @@
 							: "n")));
 					thclasses = " class='selected'";
 				}
-				content += "<th" + thclasses
+				content += "<th rowspan=2" + thclasses
 						+ "><div class='columnName' style='display: none'>" + f
 						+ "</div><div class='columnTitle'>";
 				content += fieldInfo.title;
 				content += "<div class='" + classes + "'></div></div></th>";
 			}
+
+			/**
+			 * actions
+			 */
+			if (this.settings.actions != null
+					|| this.settings.multipleActions != null) {
+				var actionsKeys = Object.keys(this.settings.actions);
+				var multipleActionsKeys = (this.settings.multipleActions != null) ? 1
+						: 0;
+				var numActions = actionsKeys.length + multipleActionsKeys;
+				content += "<th colspan='" + numActions + "' class='nofield'>Acoes</th>";
+				content += "</tr><tr>";
+				
+				
+				
+				for ( var i = 0; i < actionsKeys.length; i++) {
+					var action = this.settings.actions[actionsKeys[i]];
+					var s = [];
+					if (typeof action.style == "object") {
+						for ( var stk in action.style) {
+							var st = action.style;
+							s.push(stk + ":" + st[stk]);
+						}
+					}
+					content += "<th style='" + (s.join(";")) + "' class='nofield'>" + actionsKeys[i]
+							+ "</th>";
+				}
+				if (this.settings.multipleActions != null) {
+					var s = [];
+					if (typeof this.settings.multipleActions.style == "object") {
+						for ( var stk in this.settings.multipleActions.style) {
+							var st = this.settings.multipleActions.style;
+							s.push(stk + ":" + st[stk]);
+						}
+					}
+					content += "<th style='" + (s.join(";")) + "' class='nofield'>@</th>";
+				}
+			}
+
 			content += "</tr></thead>";
 
 			/**
@@ -456,9 +525,12 @@
 			for ( var i = 0; i < root.length; i++) {
 				var tuple = root[i];
 				content += "<tr class='" + (odd ? "odd" : "even") + "'>";
-				content += "<td style='text-align: center; width: 20px'>"
-						+ ((i + 1) + (this.settings.currentPage * this.settings.maxPerPage))
-						+ "</td>";
+
+				if (this.settings.enumerate) {
+					content += "<td style='text-align: center; width: 20px'>"
+							+ ((i + 1) + (this.settings.currentPage * this.settings.maxPerPage))
+							+ "</td>";
+				}
 				for ( var f in this.settings.fields) {
 					var fieldInfo = this.settings.fields[f];
 					/**
@@ -546,6 +618,37 @@
 					content += "<td style='" + s.join(";") + "' "
 							+ fieldFullVal + ">" + fieldVal + "</td>";
 				}
+				if (this.settings.actions != null) {
+					for ( var actionKey in this.settings.actions) {
+						var action = this.settings.actions[actionKey];
+						var val = "";
+						if (action.buttonClass) {
+							val = "<div class='"+action.buttonClass+"'></div>";
+						} else {
+							val = actionKey;
+						}
+
+						var s = [];
+						if (typeof action.style == "object") {
+							for ( var stk in action.style) {
+								var st = action.style;
+								s.push(stk + ":" + st[stk]);
+							}
+						}
+						
+						content += "<td style='" + (s.join(";")) + "' >" + val + "</td>";
+					}
+				}
+				if (this.settings.multipleActions != null) {
+					var s = [];
+					if (typeof this.settings.multipleActions.style == "object") {
+						for ( var stk in this.settings.multipleActions.style) {
+							var st = this.settings.multipleActions.style;
+							s.push(stk + ": " + st[stk]);
+						}
+					}
+					content += "<td style='" + (s.join(";")) + "'><input type='checkbox' name='resultAreaIds' /></td>";
+				}
 				content += "</tr>";
 				odd = (odd) ? false : true;
 			}
@@ -561,7 +664,7 @@
 			 * add column order controls
 			 */
 			$(this.element)
-					.find(".resultArea table thead th:not(:first-child)")
+					.find(".resultArea table thead th:not(.nofield)")
 					.click(
 							function() {
 								/**
@@ -691,6 +794,14 @@
 		"filters.unavaliable" : {
 			"en" : "Unavaliable filters to add",
 			"pt" : "Não há filtros para adicionar"
+		},
+		"actions" : {
+			"en" : "Actions",
+			"pt" : "Ações"
+		},
+		"action" : {
+			"en" : "Action",
+			"pt" : "Ação"
 		}
 	};
 
