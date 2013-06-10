@@ -4,10 +4,10 @@
 	<title></title>
 	<meta charset="utf-8">
 	<meta http-equiv="cache-control" content="no-cache">
-	<link rel="stylesheet" media="all" href="css/ui-lightness/jquery-ui-1.10.3.custom.min.css">
+	<link rel="stylesheet" media="all" href="css/custom-theme/jquery-ui-1.10.3.custom.min.css">
 	<link rel="stylesheet" media="all" href="css/jtable2.css">
 	<script src="js/jquery-1.10.1.min.js"></script>
-	<script src="js/jquery-ui-1.10.3.custom.min.js"></script>
+	<script src="js/jquery-ui-1.10.3.custom.js"></script>
 	<script src="js/jquery-ui-timepicker-addon.js"></script>
 	<script src="js/jtable2.js"></script>
 	<script src="js/moment.min.js"></script>
@@ -25,12 +25,12 @@
 					"id":   {
 						title: "ID",
 						style: { "text-align": "center", "width": "100px" },
-						type: "numeric",
-						order: "desc"
+						type: "numeric"
 					},
 					"login": {
 						title: "Login",
-						style: { "text-align": "center", "width": "100px"  }
+						style: { "text-align": "center", "width": "100px"  },
+						order: "asc"
 					},
 					"fullName": {
 						title: "Nome",
@@ -50,7 +50,7 @@
 					maxPerPage: "maxResults"
 				},
 				currentPage: 0,
-				maxPerPage: 5
+				maxPerPage: 10
 			});
 			$("#tabela").load();
 			$("#tabela").focus();

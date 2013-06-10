@@ -51,12 +51,18 @@
 		content += "<div class='paginatingArea'></div>";
 		content += "</div>";
 		$(this.element).html(content);
+		/**
+		 * define jquery ui style
+		 */
+		$(this.element).find(".tableTitle").addClass("ui-widget-header");
 		$(this.element).find(".tableTitle").html(this.settings.title);
 		if (this.settings.filtering) {
 
 			var filterArea = $(this.element).find(".filterArea")[0];
 
-			$(filterArea).append("<div class='filters'><table style='border-spacing: 0px'></table></div>");
+			$(filterArea)
+					.append(
+							"<div class='filters'><table style='border-spacing: 0px'></table></div>");
 
 			$(filterArea).append(
 					"<div class='filtersAdd'>"
@@ -74,103 +80,9 @@
 			var filtersAdd = $(this.element).find(".filterArea .filtersAdd")[0];
 			var filtersSearch = $(this.element).find(
 					".filterArea .filtersSearch")[0];
-			$(filtersAdd)
-					.click(
-							function() {
-								instance.log("filtersAdd");
-
-								instance.getFilterDialog();
-
-								/**
-								 * dialog content
-								 */
-								instance.filterDialog.text("");
-								for ( var f in instance.settings.fields) {
-									var fieldInfo = instance.settings.fields[f];
-									instance.filterDialog
-											.append(" <input type='checkbox' value='"
-													+ f
-													+ "' /> "
-													+ fieldInfo.title
-													+ "<br />");
-								}
-								/**
-								 * buttons
-								 */
-								var dialogButtons = {};
-								dialogButtons[jTable2.getMessage("add.filters",
-										instance.settings.lang)] = function() {
-									instance.filterDialog
-											.find(
-													"input[type=checkbox]:checked")
-											.each(
-													function(i, e) {
-														var fieldInfo = instance.settings.fields[e.value];
-														/**
-														 * adding filter field
-														 */
-														$(instance.element)
-																.find(
-																		".filterArea .filters table")
-																.append(
-																		"<tr><td>"
-																				+ fieldInfo.title
-																				+ "</td><td><input class='textfilter' name='"
-																				+ e.value
-																				+ "' type='text' /></td></tr>");
-														if (fieldInfo.type == "datetime") {
-															var dateFormat = fieldInfo.format
-																	.split(" ")[0]
-																	|| "mm/dd/yy";
-															var timeFormat = fieldInfo.format
-																	.split(" ")[1]
-																	|| "HH:mm:ss";
-															var el = $(
-																	instance.element)
-																	.find(
-																			".filterArea .filters input[name="
-																					+ e.value
-																					+ "]");
-															el
-																	.datetimepicker({
-																		dateFormat : dateFormat,
-																		timeFormat : timeFormat
-																	});
-															el
-																	.datetimepicker(
-																			"option",
-																			$.datepicker.regional["pt"]);
-															el
-																	.datetimepicker(
-																			"option",
-																			$.timepicker.regional["pt"]);
-														} else if (fieldInfo.type == "numeric") {
-															var el = $(
-																	instance.element)
-																	.find(
-																			".filterArea .filters input[name="
-																					+ e.value
-																					+ "]");
-															el
-																	.attr(
-																			"onkeypress",
-																			"return event.charCode >= 48 && event.charCode <= 57");
-														}
-													});
-									$(this).dialog("close");
-								};
-								dialogButtons[jTable2.getMessage("cancel",
-										instance.settings.lang)] = function() {
-									$(this).dialog("close");
-								};
-								instance.filterDialog.dialog("option",
-										"buttons", dialogButtons);
-
-								/**
-								 * open dialog
-								 */
-								instance.filterDialog.dialog('open');
-							});
+			$(filtersAdd).click(function() {
+				instance.addFilterClick();
+			});
 			$(filtersSearch).click(function() {
 				instance.load();
 			});
@@ -184,17 +96,19 @@
 					.bind(
 							"keydown",
 							function(event) {
-								var current = 38;
-								var inc = event.keyCode - current;
-								if (inc == 1 || inc == -1) {
-									var newPage = (instance.settings.currentPage + inc);
-									if (newPage >= 0
-											&& newPage < instance.settings.totalPages) {
+								if (!$(event.target).hasClass("filter")) {
+									var current = 38;
+									var inc = event.keyCode - current;
+									if (inc == 1 || inc == -1) {
+										var newPage = (instance.settings.currentPage + inc);
+										if (newPage >= 0
+												&& newPage < instance.settings.totalPages) {
 
-										/**
-										 * go to new page
-										 */
-										instance.goToPage(newPage);
+											/**
+											 * go to new page
+											 */
+											instance.goToPage(newPage);
+										}
 									}
 								}
 							});
@@ -213,6 +127,159 @@
 			});
 		}
 		;
+	};
+
+	jTable2.prototype.addFilterClick = function() {
+		var instance = this;
+		this.log("filtersAdd");
+
+		this.getFilterDialog();
+
+		/**
+		 * dialog content
+		 */
+		var addedCount = 0;
+		this.filterDialog.text("");
+		for ( var f in this.settings.fields) {
+			var fieldInfo = this.settings.fields[f];
+			var el = $(this.element).find(
+					".filterArea .filters input[name=" + f + "]");
+			if (el.length == 0) {
+				this.filterDialog
+						.append(" <input type='checkbox' checked='checked' value='"
+								+ f + "' /> " + fieldInfo.title + "<br />");
+				addedCount++;
+			}
+			;
+		}
+		if (addedCount == 0) {
+			this.filterDialog.append(jTable2.getMessage("filters.unavaliable",
+					this.settings.lang)
+					+ "<br />");
+		}
+		;
+		/**
+		 * buttons
+		 */
+		var dialogButtons = {};
+		if (addedCount > 0) {
+			dialogButtons[jTable2.getMessage("add.filters", this.settings.lang)] = function() {
+				instance.filterDialog
+						.find("input[type=checkbox]:checked")
+						.each(
+								function(i, e) {
+									var fieldInfo = instance.settings.fields[e.value];
+									var numericfilter = "<tr><td>"
+											+ fieldInfo.title
+											+ "</td><td class='first' colspan=2><input class='filter numericfilter single' name='"
+											+ e.value
+											+ "' type='text' /><div class='icon inline'><div class='interval ui-icon "
+											+ "ui-icon-carat-2-e-w'></div></div></td>"
+											+ "<td class='second' style='display: none'><input class='filter numericfilter' name='"
+											+ e.value
+											+ "' type='text' /></td>"
+											+ "<td><div class='icon'><div class='ui-icon "
+											+ "ui-icon-trash delete'></div></div></td>"
+											+ "</tr>";
+									var textfilter = "<tr><td>"
+											+ fieldInfo.title
+											+ "</td><td colspan='2'><input class='filter textfilter' name='"
+											+ e.value
+											+ "' type='text' /></td>"
+											+ "<td><div class='icon'><div class='ui-icon "
+											+ "ui-icon-trash delete'></div></div></td>"
+											+ "</tr>";
+									/**
+									 * adding filter field
+									 */
+									var tableel = $(instance.element).find(
+											".filterArea .filters table");
+
+									if (fieldInfo.type == "datetime"
+											|| fieldInfo.type == "numeric") {
+										tableel.append(numericfilter);
+									} else {
+										tableel.append(textfilter);
+									}
+									var el = $(instance.element).find(
+											".filterArea .filters input[name="
+													+ e.value + "]");
+
+									if (fieldInfo.type == "datetime") {
+										var dateFormat = fieldInfo.format
+												.split(" ")[0]
+												|| "mm/dd/yy";
+										var timeFormat = fieldInfo.format
+												.split(" ")[1]
+												|| "HH:mm:ss";
+										el.datetimepicker({
+											dateFormat : dateFormat,
+											timeFormat : timeFormat
+										});
+										el
+												.datetimepicker(
+														"option",
+														$.datepicker.regional[instance.settings.lang]);
+										el
+												.datetimepicker(
+														"option",
+														$.timepicker.regional[instance.settings.lang]);
+									} else if (fieldInfo.type == "numeric") {
+										el
+												.attr("onkeypress",
+														"return event.charCode >= 48 && event.charCode <= 57");
+									}
+								});
+				/**
+				 * remove interval and delete click events
+				 */
+				$(instance.element).find(".filterArea .filters .interval")
+						.parent().unbind('click');
+
+				$(instance.element).find(".filterArea .filters .delete")
+						.parent().unbind('click');
+				/**
+				 * add interval and delete click events
+				 */
+
+				$(instance.element)
+						.find(".filterArea .filters .interval")
+						.parent()
+						.click(
+								function() {
+									var currentLine = $(this).parent().parent();
+									var secondTd = currentLine.find(".second");
+									var visible = (secondTd.css("display") != "none");
+									if (!visible) {
+										secondTd.show();
+										currentLine.find("td.first").attr(
+												"colspan", 1);
+										currentLine.find("td.first input")
+												.removeClass("single");
+									} else {
+										secondTd.hide();
+										currentLine.find("td.first").attr(
+												"colspan", 2);
+										currentLine.find("td.first input")
+												.addClass("single");
+									}
+								});
+				$(instance.element).find(".filterArea .filters .delete")
+						.parent().click(function() {
+							$(this).parent().parent().remove();
+						});
+				$(this).dialog("close");
+			};
+		}
+		dialogButtons[jTable2.getMessage("cancel", this.settings.lang)] = function() {
+			$(this).dialog("close");
+		};
+		this.filterDialog.dialog("option", "buttons", dialogButtons);
+
+		/**
+		 * open dialog
+		 */
+		this.filterDialog.dialog('open');
 	};
 
 	/**
@@ -369,8 +436,8 @@
 					 */
 					var asc = (this.settings.fields[f].order.toLowerCase() == "asc") ? true
 							: false;
-					classes += (" selectedIcon ui-icon " + ("ui-icon-triangle-1-" + (asc ? "n"
-							: "s")));
+					classes += (" selectedIcon ui-icon " + ("ui-icon-triangle-1-" + (asc ? "s"
+							: "n")));
 					thclasses = " class='selected'";
 				}
 				content += "<th" + thclasses
@@ -503,7 +570,7 @@
 								var colName = $(this).find(".columnName")
 										.text();
 								var asc = ($(this).find(
-										".icon.ui-icon-triangle-1-s").length == 1 || $(
+										".icon.ui-icon-triangle-1-n").length == 1 || $(
 										this).find(".icon").length == 0);
 								$(instance.element).find(
 										".resultArea table thead th").each(
@@ -518,7 +585,7 @@
 								$(this).find(".icon").addClass("ui-icon");
 								$(this).find(".icon").addClass(
 										"ui-icon-triangle-1-"
-												+ (asc ? "n" : "s"));
+												+ (asc ? "s" : "n"));
 								/**
 								 * remove order for all
 								 */
@@ -620,6 +687,10 @@
 		"inverval" : {
 			"en" : "Interval",
 			"pt" : "Intervalo"
+		},
+		"filters.unavaliable" : {
+			"en" : "Unavaliable filters to add",
+			"pt" : "Não há filtros para adicionar"
 		}
 	};
 
