@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
-	<meta charset="utf-8">
-	<meta http-equiv="cache-control" content="no-cache">
-	<link rel="stylesheet" media="all" href="css/custom-theme/jquery-ui-1.10.3.custom.min.css">
-	<link rel="stylesheet" media="all" href="css/jtable2.css">
-	<script src="js/jquery-1.10.1.min.js"></script>
-	<script src="js/jquery-ui-1.10.3.custom.js"></script>
-	<script src="js/jquery-ui-timepicker-addon.js"></script>
-	<script src="js/jtable2.js"></script>
-	<script src="js/moment.min.js"></script>
+<title></title>
+<meta charset="utf-8">
+<meta http-equiv="cache-control" content="no-cache">
+<link rel="stylesheet" media="all"
+	href="css/custom-theme/jquery-ui-1.10.3.custom.min.css">
+<link rel="stylesheet" media="all" href="css/jtable2.css">
+<script src="js/jquery-1.10.1.min.js"></script>
+<script src="js/jquery-ui-1.10.3.custom.js"></script>
+<script src="js/jquery-ui-timepicker-addon.js"></script>
+<script src="js/jtable2.js"></script>
+<script src="js/moment.min.js"></script>
 <!-- 	<script src="js/shortcut.js"></script> -->
-	<script>
+<script>
 		$(window).ready(function(){
 			$("#tabela").jTable2({
 				title: "Lista de usuários",
@@ -20,10 +21,12 @@
 				url: "/TalaoEletronicoServer/ait/listarTabela/",
 				lang: "pt",
 				maxPagesViewed : 5,
+				enumerate: true,
+				idField: "ait",
 				fields: {
 					"ait":   {
 						title: "AIT",
-						style: { "text-align": "center", "width": "80px" }
+						style: { "text-align": "center", "width": "80px" },
 					},
 					"veiculo.placaCodigo": {
 						title: "Placa",
@@ -52,31 +55,50 @@
 						maxLen: 50
 					}
 				},
-				enumerate: true,
 				defaultAction: {
-					url: "edit",
+					url: "/TalaoEletronicoServer/ait/{id}",
 					id: "id"
 				},
 				actions: {
-					"Editar": {
-						url: "edit",
+					"edit": {
+						title: "Editar",
+						url: "/TalaoEletronicoServer/ait/edit/{id}",
 						id: "id",
 						style: { "text-align": "center", "width": "50px" },
 						buttonClass: "icon ui-icon ui-icon-pencil"
 					},
-					"Deletar": {
-						url: "delete",
+					"delete": {
+						title: "Deletar",
+						url: "/TalaoEletronicoServer/ait/delete/{id}",
 						id: "id",
 						style: { "text-align": "center", "width": "50px" },
-						buttonClass: "icon ui-icon ui-icon-trash"
+						buttonClass: "icon ui-icon ui-icon-trash",
+						callback: function(msg, err) {
+							if (!err)
+								alert("Deletado!");
+							else
+								alert('Erro: '+err);
+						}
 					}
 				},
 				multipleActions: {
 					actions: {
-						"Deletar": {
-							url: "",
+						"Validar AIT": {
+							url: "/TalaoEletronicoServer/ait/validaList",
 							id: "id",
-							styleClass: ""
+							styleClass: "",
+							callback: function(msg) {
+								alert("Validadas!");
+							}
+						},
+						"Deletar": {
+							url: "/TalaoEletronicoServer/ait/deleteList",
+							id: "id",
+							styleClass: "",
+							callback: function(msg) {
+								alert("Deletadas!");
+							},
+							method: "POST"
 						}
 					},
 					style: { "text-align": "center", "width": "30px" }
@@ -92,11 +114,11 @@
 			$("#tabela").focus();
 		});
 	</script>
-	<style>
-		body {
-			margin: 10px;
-		}
-	</style>
+<style>
+body {
+	margin: 10px;
+}
+</style>
 </head>
 <body>
 	<div id="tabela"></div>

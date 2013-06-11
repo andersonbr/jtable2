@@ -1,9 +1,5 @@
 @CHARSET "UTF-8";
 
-body {
-	spacing: 100px;
-}
-
 .ui-widget {
 	font-size: 12px;
 }
@@ -203,6 +199,10 @@ body {
 	position: relative;
 }
 
+.jtable2 .resultArea .fieldInfo {
+	display: none;	
+}
+
 .jtable2 .resultArea table thead th.selected {
 	background-color: #e5e5e5;
 	padding: 5px;
@@ -228,7 +228,12 @@ body {
 	border-left: 1px solid #ddd;
 }
 
+/* enumerate */
 .jtable2 .resultArea table thead tr:first-child th:first-child {
+	border-left: 0px;
+	border-right: 1px solid #ddd;
+}
+.jtable2 .resultArea table thead tr:first-child th:nth-child(2) {
 	border-left: 0px;
 }
 
@@ -239,6 +244,10 @@ body {
 
 .jtable2 .resultArea table thead tr:nth-child(2) th {
 	min-width: auto;
+}
+
+.jtable2 .resultArea table thead tr th.checkall {
+	cursor: pointer;
 }
 
 /** result body */
@@ -259,6 +268,10 @@ body {
 
 .jtable2 .resultArea table tbody td:first-child {
 	border-left: 0px;
+	border-right: 1px solid #eee;
+}
+.jtable2 .resultArea table tbody td:nth-child(2) {
+	border-left: 0px;
 }
 
 .jtable2 .resultArea table tbody td .icon {
@@ -266,6 +279,15 @@ body {
 	height: 16px;
 	float: right;
 	margin-right: 17px;
+}
+
+.jtable2 .resultArea table tbody td.actionCell {
+	cursor: auto;
+}
+
+.jtable2 .resultArea table tbody tr:hover {
+	background-color: #fffffa;
+	cursor: pointer;
 }
 
 /**
@@ -293,7 +315,7 @@ body {
 	/* IE10+ */
 	background: linear-gradient(to bottom, #ebeff4 0%, #bac9dd 100%);
 	/* W3C */
-	filter: progid:DXImageTransform.Microsoft.gradient(           startColorstr='#ebeff4',
+	filter: progid:DXImageTransform.Microsoft.gradient(            startColorstr='#ebeff4',
 		endColorstr='#bac9dd', GradientType=0); /* IE6-8 */
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;

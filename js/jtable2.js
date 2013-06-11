@@ -27,6 +27,7 @@
 			debug : null,
 			callback : null,
 			fields : {},
+			idField : null,
 			actions : null,
 			multipleActions : null,
 			lang : null,
@@ -112,6 +113,7 @@
 					.bind(
 							"keydown",
 							function(event) {
+								// TODO: ctrl+ shift+
 								if (!$(event.target).hasClass("filter")) {
 									var current = 38;
 									var inc = event.keyCode - current;
@@ -453,9 +455,8 @@
 			 * head
 			 */
 			content += "<thead><tr>";
-			if (this.settings.enumerate) {
-				content += "<th rowspan=2 class='enumerate nofield'>#</th>";
-			}
+			content += "<th rowspan=2 class='enumerate nofield'>#</th>";
+
 			for ( var f in this.settings.fields) {
 				var fieldInfo = this.settings.fields[f];
 				var classes = "icon";
@@ -486,11 +487,10 @@
 				var multipleActionsKeys = (this.settings.multipleActions != null) ? 1
 						: 0;
 				var numActions = actionsKeys.length + multipleActionsKeys;
-				content += "<th colspan='" + numActions + "' class='nofield'>Acoes</th>";
+				content += "<th colspan='" + numActions
+						+ "' class='nofield'>Acoes</th>";
 				content += "</tr><tr>";
-				
-				
-				
+
 				for ( var i = 0; i < actionsKeys.length; i++) {
 					var action = this.settings.actions[actionsKeys[i]];
 					var s = [];
@@ -500,8 +500,8 @@
 							s.push(stk + ":" + st[stk]);
 						}
 					}
-					content += "<th style='" + (s.join(";")) + "' class='nofield'>" + actionsKeys[i]
-							+ "</th>";
+					content += "<th style='" + (s.join(";"))
+							+ "' class='nofield'>" + action.title + "</th>";
 				}
 				if (this.settings.multipleActions != null) {
 					var s = [];
@@ -511,7 +511,8 @@
 							s.push(stk + ":" + st[stk]);
 						}
 					}
-					content += "<th style='" + (s.join(";")) + "' class='nofield'>@</th>";
+					content += "<th style='" + (s.join(";"))
+							+ "' class='nofield checkall'>@</th>";
 				}
 			}
 
@@ -526,11 +527,12 @@
 				var tuple = root[i];
 				content += "<tr class='" + (odd ? "odd" : "even") + "'>";
 
-				if (this.settings.enumerate) {
-					content += "<td style='text-align: center; width: 20px'>"
-							+ ((i + 1) + (this.settings.currentPage * this.settings.maxPerPage))
-							+ "</td>";
-				}
+				content += "<td class='enumerate' style='text-align: center; width: 20px'>"
+						+ ((i + 1) + (this.settings.currentPage * this.settings.maxPerPage))
+						+ "<div class='fieldInfo id'>"
+						+ jTable2.getNodeField(tuple, this.settings.idField)
+						+ "</div></td>";
+
 				for ( var f in this.settings.fields) {
 					var fieldInfo = this.settings.fields[f];
 					/**
@@ -623,7 +625,8 @@
 						var action = this.settings.actions[actionKey];
 						var val = "";
 						if (action.buttonClass) {
-							val = "<div class='"+action.buttonClass+"'></div>";
+							val = "<div class='" + action.buttonClass
+									+ "'></div>";
 						} else {
 							val = actionKey;
 						}
@@ -635,8 +638,9 @@
 								s.push(stk + ":" + st[stk]);
 							}
 						}
-						
-						content += "<td style='" + (s.join(";")) + "' >" + val + "</td>";
+
+						content += "<td class='actionCell' style='"
+								+ (s.join(";")) + "' >" + val + "</td>";
 					}
 				}
 				if (this.settings.multipleActions != null) {
@@ -647,7 +651,9 @@
 							s.push(stk + ": " + st[stk]);
 						}
 					}
-					content += "<td style='" + (s.join(";")) + "'><input type='checkbox' name='resultAreaIds' /></td>";
+					content += "<td class='actionCell checkboxes' style='"
+							+ (s.join(";"))
+							+ "'><input type='checkbox' name='resultAreaIds' /></td>";
 				}
 				content += "</tr>";
 				odd = (odd) ? false : true;
@@ -658,7 +664,19 @@
 			 * insert result table
 			 */
 			$(this.element).find(".resultArea").html(content);
+			if (!this.settings.enumerate) {
+				$(this.element).find(".resultArea .enumerate").hide();
+			}
 			$(this.element).find(".resultArea").show();
+
+			$(this.element).find(".resultArea table th.checkall").click(
+					function() {
+						$(instance.element).find(
+								".resultArea table tbody input[type=checkbox]")
+								.each(function(i, e) {
+									this.checked = !this.checked;
+								});
+					});
 
 			/**
 			 * add column order controls
@@ -678,7 +696,7 @@
 								$(instance.element).find(
 										".resultArea table thead th").each(
 										function(i, e) {
-											$(e).removeClass();
+											$(e).removeClass("selected");
 											var icon = $(e).find(".icon");
 											icon.removeClass();
 											icon.addClass("icon");
@@ -702,6 +720,54 @@
 								instance.settings.fields[colName].order = (asc ? "asc"
 										: "desc");
 								instance.load();
+							});
+			/**
+			 * action buttons
+			 */
+			$(this.element)
+					.find(
+							".resultArea table tbody td.actionCell:not(.checkboxes)")
+					.click(
+							function() {
+								var elIdx = 0;
+								var tds = $(this).parent().find(
+										".actionCell:not(.checkboxes)");
+								for ( var i = 0; i < tds.length; i++) {
+									if (this == tds[i]) {
+										elIdx = i;
+										break;
+									}
+								}
+								var id = $(this).parent().find(".fieldInfo.id")
+										.text();
+								var keys = Object
+										.keys(instance.settings.actions);
+								var action = instance.settings.actions[keys[elIdx]];
+								var url = action.url.replace("{" + action.id
+										+ "}", id);
+								var req = {};
+								if (action.url == url) {
+									req[instance.settings.idField] = id;
+								}
+								if (!action.callback) {
+									window.location.href = url;
+								} else {
+									var method = (!action.method) ? "GET"
+											: "POST";
+									$.ajax({
+										type : method,
+										url : url,
+										data : req,
+										dataType : 'json',
+										success : function(json) {
+											action.callback(json, null);
+										},
+										error : function(XMLHttpRequest,
+												textStatus, errorThrown) {
+											action.callback(null, errorThrown);
+										}
+									});
+								}
 							});
 
 			/**
