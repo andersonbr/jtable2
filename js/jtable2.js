@@ -432,6 +432,7 @@
 								var fieldFilterIntervalVal = (filterLine.length > 1) ? $(
 										filterLine[1]).val()
 										: "";
+								var operation = "ILIKE";
 								if (fieldSettings.type) {
 									switch (fieldSettings.type) {
 									case "date":
@@ -442,6 +443,7 @@
 													filterLine[1]).datepicker(
 													'getDate');
 										}
+										operation = "EQUAL";
 										break;
 									case "datetime":
 										fieldFilterVal = $(filterLine[0])
@@ -451,6 +453,10 @@
 													filterLine[1])
 													.datetimepicker('getDate');
 										}
+										operation = "EQUAL";
+										break;
+									case "numeric":
+										operation = "EQUAL";
 										break;
 									default:
 										break;
@@ -481,7 +487,7 @@
 												+ "].value"] = "BETWEEN";
 									} else {
 										filters["filter[" + numFilters
-												+ "].value"] = "ILIKE";
+												+ "].value"] = operation;
 									}
 									numFilters++;
 								}
