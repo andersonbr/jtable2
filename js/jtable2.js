@@ -26,8 +26,11 @@
 			requestParameters : null,
 			debug : null,
 			callback : null,
+			filterBean : null,
+			filterIntervalBean : null,
 			fields : {},
 			idField : null,
+			defaultAction : null,
 			actions : null,
 			multipleActions : null,
 			lang : null,
@@ -40,6 +43,7 @@
 			maxPerPage : null,
 			pagesParameters : null
 		};
+		this.loaderTimeout = null;
 		this.filterDialog = null;
 		this.initialize(settings);
 	};
@@ -64,7 +68,7 @@
 		var content = "<div class='jtable2'>";
 		content += "<div class='tableTitle'></div>";
 		content += "<div class='filterArea'></div>";
-		content += "<div class='resultArea'></div>";
+		content += "<div class='resultArea'><div class='loader'></div><div class='tableContainer'></div></div>";
 		content += "<div class='paginatingArea'></div>";
 		content += "</div>";
 		$(this.element).html(content);
@@ -104,33 +108,33 @@
 				instance.load();
 			});
 			$(filterArea).show();
+		}
 
-			/**
-			 * keydown to pass pages
-			 */
-			$(instance.element).attr("tabindex", 1);
-			$(instance.element)
-					.bind(
-							"keydown",
-							function(event) {
-								// TODO: ctrl+ shift+
-								if (!$(event.target).hasClass("filter")) {
-									var current = 38;
-									var inc = event.keyCode - current;
-									if (inc == 1 || inc == -1) {
-										var newPage = (instance.settings.currentPage + inc);
-										if (newPage >= 0
-												&& newPage < instance.settings.totalPages) {
+		/**
+		 * keydown to pass pages
+		 */
+		$(instance.element).attr("tabindex", 1);
+		$(instance.element)
+				.bind(
+						"keydown",
+						function(event) {
+							// TODO: ctrl+ shift+
+							if (!$(event.target).hasClass("filter")) {
+								var current = 38;
+								var inc = event.keyCode - current;
+								if (inc == 1 || inc == -1) {
+									var newPage = (instance.settings.currentPage + inc);
+									if (newPage >= 0
+											&& newPage < instance.settings.totalPages) {
 
-											/**
-											 * go to new page
-											 */
-											instance.goToPage(newPage);
-										}
+										/**
+										 * go to new page
+										 */
+										instance.goToPage(newPage);
 									}
 								}
-							});
-		}
+							}
+						});
 	};
 
 	jTable2.prototype.getFilterDialog = function() {
@@ -292,6 +296,8 @@
 												"colspan", 2);
 										currentLine.find("td.first input")
 												.addClass("single");
+										currentLine.find("td input").last()
+												.val("");
 									}
 								});
 				$(instance.element).find(".filterArea .filters .delete")
@@ -369,10 +375,37 @@
 
 	jTable2.prototype.requestLock = function() {
 		this.requestLocked = true;
+		$(this.element).find(".resultArea").css("minHeight", 102);
+		if (this.loaderTimeout == null) {
+			var loader = $(this.element).find(".resultArea .loader");
+			loader.html("<div class='center'></div>");
+			/** canvas loader library */
+			var cl = new CanvasLoader(loader.find(".center"), {
+				id : 'jtable2Loader'
+			});
+			cl.setColor('#999999'); // default is '#000000'
+			cl.setDiameter(44); // default is 40
+			cl.setDensity(50); // default is 40
+			cl.setRange(1); // default is 1.3
+			cl.setSpeed(5); // default is 2
+			cl.setFPS(20); // default is 24
+			cl.show(); // Hidden by default
+			loader.show();
+		} else {
+			clearTimeout(this.loaderTimeout);
+		}
+
+		$(this.element).find(".resultArea").show();
 	};
 
 	jTable2.prototype.requestUnlock = function() {
-		this.requestLocked = false;
+		var instance = this;
+		instance.requestLocked = false;
+		this.loaderTimeout = setTimeout(function() {
+			instance.loaderTimeout = null;
+			$(instance.element).find(".resultArea .loader").hide();
+			$(instance.element).find(".resultArea .loader .center").remove();
+		}, (this.settings.debug == true) ? 1000 : 200);
 	};
 
 	jTable2.prototype.load = function() {
@@ -380,6 +413,89 @@
 		if (!this.isRequestLocked()) {
 			this.requestLock();
 			var req = this.settings.requestParameters;
+
+			/**
+			 * filter
+			 */
+			var filters = {};
+			var numFilters = 0;
+			$(".filters tr")
+					.each(
+							function(i, e) {
+								var filterLine = $(e).find(".filter");
+								var filterBean = instance.settings.filterBean;
+								var filterIntervalBean = instance.settings.filterIntervalBean;
+
+								var fieldFilter = filterLine[0].name;
+								var fieldSettings = instance.settings.fields[fieldFilter];
+								var fieldFilterVal = $(filterLine[0]).val();
+								var fieldFilterIntervalVal = (filterLine.length > 1) ? $(
+										filterLine[1]).val()
+										: "";
+								if (fieldSettings.type) {
+									switch (fieldSettings.type) {
+									case "date":
+										fieldFilterVal = $(filterLine[0])
+												.datepicker('getDate');
+										if (fieldFilterIntervalVal.length > 0) {
+											fieldFilterIntervalVal = $(
+													filterLine[1]).datepicker(
+													'getDate');
+										}
+										break;
+									case "datetime":
+										fieldFilterVal = $(filterLine[0])
+												.datetimepicker('getDate');
+										if (fieldFilterIntervalVal.length > 0) {
+											fieldFilterIntervalVal = $(
+													filterLine[1])
+													.datetimepicker('getDate');
+										}
+										break;
+									default:
+										break;
+									}
+								}
+								var definedFilter = (fieldFilterVal != null
+										&& filterLine.length > 0 && ((!isNaN(fieldFilterVal) && fieldFilterVal != "") || fieldFilterVal.length > 0));
+								var definedConverterField = (fieldSettings.requestConverter && definedFilter);
+								var definedIntervalFilter = (fieldFilterIntervalVal != null
+										&& filterLine.length > 1 && ((!isNaN(fieldFilterIntervalVal) && fieldFilterIntervalVal != "") || fieldFilterIntervalVal.length > 0));
+								var definedConverterIntervalField = (fieldSettings.requestConverter && definedIntervalFilter);
+
+								if (definedConverterField) {
+									fieldFilterVal = fieldSettings
+											.requestConverter(fieldFilterVal);
+								}
+								if (definedFilter) {
+									filters[filterBean + "." + fieldFilter] = fieldFilterVal;
+									filters["filter[" + numFilters + "].key"] = fieldFilter;
+									if (definedIntervalFilter) {
+										if (definedConverterIntervalField) {
+											fieldFilterIntervalVal = fieldSettings
+													.requestConverter(fieldFilterIntervalVal);
+										}
+										filters[filterIntervalBean + "."
+												+ fieldFilter] = fieldFilterIntervalVal;
+										filters["filter[" + numFilters
+												+ "].value"] = "BETWEEN";
+									} else {
+										filters["filter[" + numFilters
+												+ "].value"] = "ILIKE";
+									}
+									numFilters++;
+								}
+							});
+			/**
+			 * test request
+			 */
+			var filter = {
+				"ait.pontosAit" : null,
+				"filter[0].key" : "veiculo",
+				"filter[0].value" : "ISNULL"
+			};
+
+			req = jTable2.mergeObjects(req, filters);
 
 			/**
 			 * sort parameters
@@ -423,6 +539,12 @@
 								errorThrown) {
 							instance.requestUnlock();
 							instance.log("error");
+							var msg = jTable2.getMessage("not.available",
+									instance.settings.lang);
+							$(instance.element).find(
+									".resultArea .tableContainer").html(
+									"<div class='messageError'>" + msg
+											+ "</div>");
 						}
 					});
 		}
@@ -439,6 +561,17 @@
 		var root = json[this.settings.rootNode];
 		var total = json[this.settings.totalPagesNode];
 		this.settings.totalPages = total;
+
+		/**
+		 * no results found
+		 */
+		if (!root || root.length == 0) {
+			var msg = jTable2
+					.getMessage("empty.result", instance.settings.lang);
+			$(instance.element).find(".resultArea .tableContainer").html(
+					"<div class='messageError'>" + msg + "</div>");
+			return;
+		}
 
 		/**
 		 * if opened a page bigger than total
@@ -487,8 +620,9 @@
 				var multipleActionsKeys = (this.settings.multipleActions != null) ? 1
 						: 0;
 				var numActions = actionsKeys.length + multipleActionsKeys;
-				content += "<th colspan='" + numActions
-						+ "' class='nofield'>Acoes</th>";
+				content += "<th colspan='" + numActions + "' class='nofield'>"
+						+ jTable2.getMessage("actions", this.settings.lang)
+						+ "</th>";
 				content += "</tr><tr>";
 
 				for ( var i = 0; i < actionsKeys.length; i++) {
@@ -559,31 +693,27 @@
 									var res = null;
 									switch (type) {
 									case "date":
-										var momentFormat = format || "mm/dd/yy";
-										momentFormat = momentFormat.replace(
-												/([^y]|^)(yy)([^y])/,
-												"$1YYYY$3");
-										momentFormat = momentFormat.replace(
-												/([^d]|^)(dd)([^d])/, "$1DD$3");
-										momentFormat = momentFormat.replace(
-												/([^m]|^)(mm)([^m])/, "$1MM$3");
-										res = (format != null) ? moment(
-												new Date(val)).format(
-												momentFormat) : new Date(val);
+										format = format
+												|| Date.getLocaleDateString();
+										// momentFormat =
+										// jTable2.momentLocalized(momentFormat);
+										// res = (format != null) ? moment(
+										// new Date(val)).format(
+										// momentFormat) : new Date(val);
+										res = (format != null) ? new Date(val)
+												.toString(format) : new Date();
 										break;
 									case "datetime":
-										var momentFormat = format
-												|| "mm/dd/yy hh:mm:ss";
-										momentFormat = momentFormat.replace(
-												/([^y]|^)(yy)([^y])/,
-												"$1YYYY$3");
-										momentFormat = momentFormat.replace(
-												/([^d]|^)(dd)([^d])/, "$1DD$3");
-										momentFormat = momentFormat.replace(
-												/([^m]|^)(mm)([^m])/, "$1MM$3");
-										res = (format != null) ? moment(
-												new Date(val)).format(
-												momentFormat) : new Date(val);
+										format = format
+												|| Date.getLocaleDateString()
+												+ " HH:mm:ss";
+										// momentFormat =
+										// jTable2.momentLocalized(momentFormat);
+										// res = (format != null) ? moment(
+										// new Date(val)).format(
+										// momentFormat) : new Date(val);
+										res = (format != null) ? new Date(val)
+												.toString(format) : new Date();
 										break;
 
 									default:
@@ -663,11 +793,11 @@
 			/**
 			 * insert result table
 			 */
-			$(this.element).find(".resultArea").html(content);
+			$(this.element).find(".resultArea .tableContainer").html(content);
 			if (!this.settings.enumerate) {
 				$(this.element).find(".resultArea .enumerate").hide();
 			}
-			$(this.element).find(".resultArea").show();
+			// $(this.element).find(".resultArea .tableContainer").show();
 
 			$(this.element).find(".resultArea table th.checkall").click(
 					function() {
@@ -743,32 +873,18 @@
 								var keys = Object
 										.keys(instance.settings.actions);
 								var action = instance.settings.actions[keys[elIdx]];
-								var url = action.url.replace("{" + action.id
-										+ "}", id);
-								var req = {};
-								if (action.url == url) {
-									req[instance.settings.idField] = id;
-								}
-								if (!action.callback) {
-									window.location.href = url;
-								} else {
-									var method = (!action.method) ? "GET"
-											: "POST";
-									$.ajax({
-										type : method,
-										url : url,
-										data : req,
-										dataType : 'json',
-										success : function(json) {
-											action.callback(json, null);
-										},
-										error : function(XMLHttpRequest,
-												textStatus, errorThrown) {
-											action.callback(null, errorThrown);
-										}
-									});
-								}
+								instance.doAction(id, action);
 							});
+
+			/**
+			 * default action
+			 */
+			$(this.element).find(".resultArea table tbody td:not(.actionCell)")
+					.click(function() {
+						var id = $(this).parent().find(".fieldInfo.id").text();
+						var action = instance.settings.defaultAction;
+						instance.doAction(id, action);
+					});
 
 			/**
 			 * paginating
@@ -816,6 +932,43 @@
 		} else {
 			this.log("fatal: root node not found (" + this.settings.rootNode
 					+ ")");
+		}
+	};
+
+	jTable2.prototype.doAction = function(id, action) {
+		var instance = this;
+		if (!this.isRequestLocked()) {
+			this.requestLock();
+			var url = action.url.replace("{" + action.id + "}", id);
+			var idField = this.settings.filterBean + "."
+					+ this.settings.idField;
+			var getString = "";
+			var req = {};
+			if (action.url == url) {
+				req[idField] = id;
+				getString = "?" + idField + "=" + id;
+			}
+			if (!action.callback) {
+				window.location.href = url + getString;
+			} else {
+				var method = (!action.method) ? "GET"
+						: (action.method.toLowerCase() == "get" || action.method
+								.toLowerCase() == "POST");
+				$.ajax({
+					type : method,
+					url : url,
+					data : req,
+					dataType : 'json',
+					success : function(json) {
+						instance.requestUnlock();
+						action.callback(json, null);
+					},
+					error : function(XMLHttpRequest, textStatus, errorThrown) {
+						instance.requestUnlock();
+						action.callback(null, errorThrown);
+					}
+				});
+			}
 		}
 	};
 
@@ -868,6 +1021,14 @@
 		"action" : {
 			"en" : "Action",
 			"pt" : "Ação"
+		},
+		"not.available" : {
+			"en" : "Server not available. Try again.",
+			"pt" : "Serviço não disponível. Tente novamente."
+		},
+		"empty.result" : {
+			"en" : "No records found",
+			"pt" : "Nenhum registro encontrado"
 		}
 	};
 
@@ -947,6 +1108,16 @@
 	};
 
 	/**
+	 * adjust time to momentjs
+	 */
+	jTable2.momentLocalized = function(format) {
+		var momentFormat = format.replace(/([^y]|^)(yy)([^y])/, "$1YYYY$3");
+		momentFormat = momentFormat.replace(/([^d]|^)(dd)([^d])/, "$1DD$3");
+		momentFormat = momentFormat.replace(/([^m]|^)(mm)([^m])/, "$1MM$3");
+		return momentFormat;
+	};
+
+	/**
 	 * logger to browser console
 	 * 
 	 * @param msg
@@ -974,6 +1145,8 @@
 			totalPagesNode : "total",
 			currentPage : 0,
 			totalPages : -1,
+			filterBean : "bean",
+			filterIntervalBean : "beanInterval",
 			maxPerPage : 10,
 			pagesParameters : {
 				currentPage : "currentPage",
@@ -992,6 +1165,9 @@
 				for ( var i = 0; i < this.length; i++) {
 					jTable2.getInstance(this[i]).load();
 				}
+			},
+			refresh : function() {
+				this.load();
 			},
 			getSettings : function() {
 				/**

@@ -12,6 +12,8 @@
 <script src="js/jquery-ui-timepicker-addon.js"></script>
 <script src="js/jtable2.js"></script>
 <script src="js/moment.min.js"></script>
+<script src="js/date.js"></script>
+<script src="js/canvasloader.js"></script>
 <!-- 	<script src="js/shortcut.js"></script> -->
 <script>
 		$(window).ready(function(){
@@ -22,6 +24,8 @@
 				lang: "pt",
 				maxPagesViewed : 5,
 				enumerate: true,
+				filterBean: "ait",
+				filterIntervalBean: "aitInterval",
 				idField: "ait",
 				fields: {
 					"ait":   {
@@ -41,12 +45,16 @@
 						title: "Data",
 						style: { "text-align": "center", "min-width": "120px", "width": "120px" },
 						type: "datetime",
-						format: "dd/mm/yy hh:mm:ss",
-						order: "desc"
+						format: "dd/MM/yyyy HH:mm:ss",
+						order: "desc",
+						requestConverter : function(val) {
+							console.debug(val.length);
+							return val.getTime();
+						}
 					},
 					"pontosAit": {
 						title: "Pontos",
-						style: { "text-align": "center", "width": "70px" },
+						style: { "text-align": "centethisr", "width": "70px" },
 						type: "numeric"
 					},
 					"local": {
@@ -62,7 +70,7 @@
 				actions: {
 					"edit": {
 						title: "Editar",
-						url: "/TalaoEletronicoServer/ait/edit/{id}",
+						url: "/TalaoEletronicoServer/ait/edit",
 						id: "id",
 						style: { "text-align": "center", "width": "50px" },
 						buttonClass: "icon ui-icon ui-icon-pencil"
@@ -74,13 +82,16 @@
 						style: { "text-align": "center", "width": "50px" },
 						buttonClass: "icon ui-icon ui-icon-trash",
 						callback: function(msg, err) {
-							if (!err)
-								alert("Deletado!");
-							else
+							if (!err) {
+								$("#tabela").refresh();
+								console.debug("Deletado!");
+							} else {
 								alert('Erro: '+err);
+							}
 						}
 					}
 				},
+				/*
 				multipleActions: {
 					actions: {
 						"Validar AIT": {
@@ -102,7 +113,7 @@
 						}
 					},
 					style: { "text-align": "center", "width": "30px" }
-				},
+				},*/
 				pagesParameters: {
 					currentPage: "currentPage",
 					maxPerPage: "maxResults"

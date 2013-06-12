@@ -108,8 +108,8 @@
 .jtable2 .filterArea .filtersSearch {
 	width: 80px;
 	height: 15px;
-	background-color: #f0f0f0;
-	border: 1px solid #d0d0d0;
+	background-color: #b6d0f0;
+	border: 1px solid #b0b0b0;
 	padding: 5px;
 	cursor: pointer;
 	position: absolute;
@@ -166,6 +166,45 @@
 	min-height: 0px;
 	overflow: auto;
 	display: none;
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.jtable2 .center {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+}
+
+.jtable2 .resultArea .loader #jtable2Loader {
+	left: -22px;
+	top: -22px;
+	position: absolute;
+}
+
+.jtable2 .resultArea .loader {
+	position: absolute;
+	left: 0px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
+	background-color: rgba(240, 240, 240, .4);
+	z-index: 1000000000000000000000;
+	display: none;
+}
+
+.jtable2 .resultArea .messageError {
+	text-align: center;
+	vertical-align: middle;
+	position: absolute;
+	bottom: 0px;
+	top: 30%;
+	right: 0px;
+	left: 0px;
 }
 
 .jtable2 .resultArea table {
@@ -200,7 +239,7 @@
 }
 
 .jtable2 .resultArea .fieldInfo {
-	display: none;	
+	display: none;
 }
 
 .jtable2 .resultArea table thead th.selected {
@@ -233,6 +272,7 @@
 	border-left: 0px;
 	border-right: 1px solid #ddd;
 }
+
 .jtable2 .resultArea table thead tr:first-child th:nth-child(2) {
 	border-left: 0px;
 }
@@ -270,6 +310,7 @@
 	border-left: 0px;
 	border-right: 1px solid #eee;
 }
+
 .jtable2 .resultArea table tbody td:nth-child(2) {
 	border-left: 0px;
 }
@@ -282,7 +323,7 @@
 }
 
 .jtable2 .resultArea table tbody td.actionCell {
-	cursor: auto;
+	cursor: pointer;
 }
 
 .jtable2 .resultArea table tbody tr:hover {
@@ -315,7 +356,7 @@
 	/* IE10+ */
 	background: linear-gradient(to bottom, #ebeff4 0%, #bac9dd 100%);
 	/* W3C */
-	filter: progid:DXImageTransform.Microsoft.gradient(            startColorstr='#ebeff4',
+	filter: progid:DXImageTransform.Microsoft.gradient(                startColorstr='#ebeff4',
 		endColorstr='#bac9dd', GradientType=0); /* IE6-8 */
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
