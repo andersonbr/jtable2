@@ -105,6 +105,7 @@
 				instance.addFilterClick();
 			});
 			$(filtersSearch).click(function() {
+				instance.settings.currentPage = 0;
 				instance.load();
 			});
 			$(filterArea).show();
@@ -193,10 +194,10 @@
 									var fieldInfo = instance.settings.fields[e.value];
 									var numericfilter = "<tr><td>"
 											+ fieldInfo.title
-											+ "</td><td class='first' colspan=2><input class='filter numericfilter single' name='"
+											+ "</td><td class='first' colspan=2><div class='numericfilterFirstDiv'><input class='filter numericfilter single' name='"
 											+ e.value
 											+ "' type='text' /><div class='icon inline'><div class='interval ui-icon "
-											+ "ui-icon-carat-2-e-w'></div></div></td>"
+											+ "ui-icon-carat-2-e-w'></div></div></div></td>"
 											+ "<td class='second' style='display: none'><input class='filter numericfilter' name='"
 											+ e.value
 											+ "' type='text' /></td>"
@@ -281,7 +282,8 @@
 						.parent()
 						.click(
 								function() {
-									var currentLine = $(this).parent().parent();
+									var currentLine = $(this).parent().parent()
+											.parent();
 									var secondTd = currentLine.find(".second");
 									var visible = (secondTd.css("display") != "none");
 									if (!visible) {
@@ -545,6 +547,7 @@
 								errorThrown) {
 							instance.requestUnlock();
 							instance.log("error");
+							$(instance.element).find(".pager").hide();
 							var msg = jTable2.getMessage("not.available",
 									instance.settings.lang);
 							$(instance.element).find(
@@ -571,10 +574,11 @@
 		/**
 		 * no results found
 		 */
-		if (!root || root.length == 0) {
+		if (!root || total == 0) {
+			$(this.element).find(".pager").hide();
 			var msg = jTable2
-					.getMessage("empty.result", instance.settings.lang);
-			$(instance.element).find(".resultArea .tableContainer").html(
+					.getMessage("empty.result", this.settings.lang);
+			$(this.element).find(".resultArea .tableContainer").html(
 					"<div class='messageError'>" + msg + "</div>");
 			return;
 		}
@@ -586,6 +590,7 @@
 			this.goToPage(total - 1);
 			return;
 		}
+		$(this.element).find(".pager").show();
 
 		if (typeof root != "undefined") {
 			var content = "<table class='resultAreaTable'>";
@@ -599,7 +604,7 @@
 			for ( var f in this.settings.fields) {
 				var fieldInfo = this.settings.fields[f];
 				var classes = "icon";
-				var thclasses = "";
+				var thclasses = " class='";
 				if (typeof this.settings.fields[f].order != "undefined") {
 					/**
 					 * define presentation to column order
@@ -608,8 +613,12 @@
 							: false;
 					classes += (" selectedIcon ui-icon " + ("ui-icon-triangle-1-" + (asc ? "s"
 							: "n")));
-					thclasses = " class='selected'";
+					thclasses += "selected";
 				}
+				if (fieldInfo["logic"]) {
+					thclasses += " nofield";
+				}
+				thclasses += "'";
 				content += "<th rowspan=2" + thclasses
 						+ "><div class='columnName' style='display: none'>" + f
 						+ "</div><div class='columnTitle'>";
@@ -678,7 +687,9 @@
 					/**
 					 * value for column f
 					 */
-					var fieldVal = jTable2.getNodeField(tuple, f) || "";
+					var fieldVal = (!(fieldInfo["logic"])) ? (jTable2
+							.getNodeField(tuple, f) || "") : jTable2
+							.getLogicValue(tuple, fieldInfo["logic"]);
 					var fieldFullVal = null;
 					/**
 					 * type of column
@@ -726,7 +737,7 @@
 										res = val;
 										if (maxLen > 0 && val.length > maxLen) {
 											fieldFullVal = val.replace(
-													/(['"])/g, "\\$1"); // escape
+													/(["])/g, "&quot"); // escape
 											res = val.substring(0, maxLen)
 													+ "...";
 										}
@@ -744,17 +755,17 @@
 					 */
 					var s = [];
 					for ( var st in fieldInfo.style) {
-						s.push(st + ": " + fieldInfo.style[st]);
+						s.push(st + ":" + fieldInfo.style[st]);
 					}
 
 					/**
 					 * set cell
 					 */
-					fieldFullVal = (fieldFullVal != null) ? " title='"
-							+ fieldFullVal + "' " : "";
+					fieldFullVal = (fieldFullVal != null) ? ' title="'
+							+ fieldFullVal + '" ' : "";
 
-					content += "<td style='" + s.join(";") + "' "
-							+ fieldFullVal + ">" + fieldVal + "</td>";
+					content += "<td style='" + s.join(";") + "'" + fieldFullVal
+							+ ">" + fieldVal + "</td>";
 				}
 				if (this.settings.actions != null) {
 					for ( var actionKey in this.settings.actions) {
@@ -1121,6 +1132,42 @@
 		momentFormat = momentFormat.replace(/([^d]|^)(dd)([^d])/, "$1DD$3");
 		momentFormat = momentFormat.replace(/([^m]|^)(mm)([^m])/, "$1MM$3");
 		return momentFormat;
+	};
+
+	/**
+	 * get logic for tuple
+	 */	
+	jTable2.getLogicValue = function(tuple, logic) {
+		var ret = false;
+		// or (array)
+		if (typeof logic.length != "undefined") {
+			// each element
+			for ( var i = 0; i < logic.length; i++) {
+				var orRet =  jTable2.getLogicValue(tuple, logic[i]);
+				// if any or value is true, break for
+				if (orRet == true) {
+					ret = true;
+					break;
+				}
+			}
+		} else {
+			ret = true;
+			for ( var andIdx in logic) {
+				var andEl = logic[andIdx];
+				if (typeof andEl == "object") {
+					ret = jTable2.getLogicValue(tuple, andEl);
+				} else {
+					// validate logic
+					var val = jTable2.getNodeField(tuple, andIdx);
+					ret = (val == andEl);
+				}
+				if (ret != true) {
+					break;
+				}
+			}
+			return ret;
+		}
+		return ret;
 	};
 
 	/**

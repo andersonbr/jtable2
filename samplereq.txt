@@ -1,0 +1,141 @@
+$(document).ready(function() {
+		$("#lista").jTable2({
+			title: "Lista de autuações",
+			filtering: true,
+			url: "/TalaoEletronicoServer/ait/listarTabela/",
+			lang: "pt",
+			maxPagesViewed : 5,
+			enumerate: true,
+			filterBean: "ait",
+			filterIntervalBean: "aitInterval",
+			idField: "ait",
+			fields: {
+				"ait":   {
+					title: "AIT",
+					style: { "text-align": "center", "width": "80px", "max-width": "80px", "min-width": "80px" },
+				},
+				"veiculo.placaCodigo": {
+					title: "Placa",
+					style: { "text-align": "center", "width": "80px", "max-width": "80px", "min-width": "80px"  },
+					maxLen: 8
+				},
+				"usuario.login": {
+					title: "Agente",
+					style: { "text-align": "center", "width": "70px", "max-width": "70px", "min-width": "70px"  }
+				},
+				"dataHora": {
+					title: "Data",
+					style: { "text-align": "center", "width": "120px", "min-width": "120px", "max-width": "120px" },
+					type: "datetime",
+					format: "dd/MM/yyyy HH:mm:ss",
+					order: "desc",
+					requestConverter : function(val) {
+						console.debug(val.length);
+						return val.getTime();
+					}
+				},
+				"pontosAit": {
+					title: "Pontos",
+					style: { "text-align": "center", "width": "70px", "min-width": "70px", "max-width": "70px" },
+					type: "numeric"
+				},
+				"local": {
+					title: "Local",
+					style: { "text-align": "left" },
+					maxLen: 50
+				},
+				"valida": {
+					title: "Válida",
+					style: { "text-align": "center", "width": "90px", "min-width": "90px", "max-width": "90px" },
+					maxLen: 50,
+					converter: function(val) {
+						if (val == true) {
+							return "&#10003;";
+						} else {
+							return "";
+						}
+					}
+				},
+				"confirmada": {
+					title: "Confirmada",
+					style: { "text-align": "center", "width": "90px", "min-width": "90px", "max-width": "90px" },
+					maxLen: 50,
+					converter: function(val) {
+						if (val == true) {
+							return "&#10003;";
+						} else {
+							return "";
+						}
+					}
+				},
+				"cancelado": {
+					title: "Cancelada",
+					style: { "text-align": "center", "width": "90px", "min-width": "90px", "max-width": "90px" },
+					maxLen: 50,
+					converter: function(val) {
+						if (val == true) {
+							return "&#10003;";
+						} else {
+							return "";
+						}
+					}
+				},
+				"validada": {
+					logic: [
+					    {
+					    	"confirmada": true
+						},
+						{
+							"cancelado": false,
+							"valida": true
+						}
+					],
+					title: "Validada",
+					style: { "text-align": "center", "width": "90px", "min-width": "90px", "max-width": "90px" },
+					maxLen: 50,
+					converter: function(val) {
+						if (val == true) {
+							return "&#10003;";
+						} else {
+							return "";
+						}
+					}
+				}
+			},
+			defaultAction: {
+				url: "/TalaoEletronicoServer/ait/{id}",
+				id: "id"
+			},
+			/*
+			multipleActions: {
+				actions: {
+					"Validar AIT": {
+						url: "/TalaoEletronicoServer/ait/validaList",
+						id: "id",
+						styleClass: "",
+						callback: function(msg) {
+							alert("Validadas!");
+						}
+					},
+					"Deletar": {
+						url: "/TalaoEletronicoServer/ait/deleteList",
+						id: "id",
+						styleClass: "",
+						callback: function(msg) {
+							alert("Deletadas!");
+						},
+						method: "POST"
+					}
+				},
+				style: { "text-align": "center", "width": "30px" }
+			},*/
+			pagesParameters: {
+				currentPage: "currentPage",
+				maxPerPage: "maxResults"
+			},
+			currentPage: 0,
+			maxPerPage: 10
+		});
+		$("#lista").load();
+		$("#lista").focus();
+	});
