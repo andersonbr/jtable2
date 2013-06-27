@@ -17,7 +17,7 @@
 <!-- 	<script src="js/shortcut.js"></script> -->
 <script>
 		$(window).ready(function(){
-			$("#tabela").jTable2({
+			var infracoesConf = {
 				title: "Lista de usuários",
 				filtering: true,
 				url: "/TalaoEletronicoServer/ait/listarTabela/",
@@ -120,7 +120,81 @@
 				},
 				currentPage: 0,
 				maxPerPage: 10
-			});
+			};
+			var userConf = {
+					title: "Lista de usuários",
+					filtering: true,
+					url: "/Web/user/search",
+					lang: "pt",
+					maxPagesViewed : 5,
+					enumerate: true,
+					filterBean: "user",
+					filterIntervalBean: "userInterval",
+					idField: "id",
+					fields: {
+						"id":   {
+							title: "Código",
+							style: { "text-align": "center", "width": "80px" },
+							type: "numeric"
+						},
+						"login": {
+							title: "Login",
+							style: { "text-align": "center", "width": "70px"  }
+						},
+						"fullName": {
+							title: "Nome",
+							style: { "text-align": "left" },
+							maxLen: 50
+						},
+						"email": {
+							title: "E-mail",
+							style: { "text-align": "left" },
+							maxLen: 50
+						},
+						"lastmodification": {
+							title: "Data",
+							style: { "text-align": "center", "min-width": "120px", "width": "120px" },
+							type: "datetime",
+							format: "dd/MM/yyyy HH:mm:ss",
+							order: "desc"
+						}
+					},
+					defaultAction: {
+						url: "/Web/user/{id}",
+						id: "id"
+					},
+					actions: {
+						"edit": {
+							title: "Editar",
+							url: "/Web/user/edit/{id}",
+							id: "id",
+							style: { "text-align": "center", "width": "50px" },
+							buttonClass: "icon ui-icon ui-icon-pencil"
+						},
+						"delete": {
+							title: "Deletar",
+							url: "/Web/user/delete/{id}",
+							id: "id",
+							style: { "text-align": "center", "width": "50px" },
+							buttonClass: "icon ui-icon ui-icon-trash",
+							callback: function(msg, err) {
+								if (!err) {
+									$("#tabela").refresh();
+									console.debug("Deletado!");
+								} else {
+									alert('Erro: '+err);
+								}
+							}
+						}
+					},
+					pagesParameters: {
+						currentPage: "currentPage",
+						maxPerPage: "maxResults"
+					},
+					currentPage: 0,
+					maxPerPage: 10
+				};
+			$("#tabela").jTable2(userConf);
 			$("#tabela").load();
 			$("#tabela").focus();
 		});
